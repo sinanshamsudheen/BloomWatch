@@ -200,7 +200,18 @@ async def geocode_regions(regions: List[Dict]) -> List[Dict]:
                 region['coordinates'] = coords
                 region['needs_geocoding'] = False
             else:
-                region['needs_geocoding'] = True
+                # Try to get country center as fallback when region-specific coords aren't found
+                country = region.get('country', '')
+                if country:
+                    country_coords = estimate_country_center(country)
+                    if country_coords:
+                        region['coordinates'] = country_coords
+                        region['needs_geocoding'] = False
+                        logger.info(f"Using country center coordinates for {region.get('name', '')} in {country}: {country_coords}")
+                    else:
+                        region['needs_geocoding'] = True
+                else:
+                    region['needs_geocoding'] = True
     
     return regions
 

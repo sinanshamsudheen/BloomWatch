@@ -84,13 +84,25 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
   }, [region]);
 
   const handleSearch = () => {
-    if (region.trim()) {
-      onSearch(region, flower);
-      setShowSuggestions(false);
+    if (!region.trim()) {
+      toast.error("Please enter a region");
+      return;
     }
+    if (!flower.trim()) {
+      toast.error("Please enter a flower name");
+      return;
+    }
+    
+    onSearch(region, flower);
+    setShowSuggestions(false);
   };
 
   const handleSuggestionClick = (suggestion: LocationSuggestion) => {
+    if (!flower.trim()) {
+      toast.error("Please enter a flower name");
+      return;
+    }
+    
     setRegion(suggestion.display_name);
     setSuggestions([]);
     setShowSuggestions(false);
@@ -178,7 +190,7 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
           <div className="flex-1 relative">
             <Flower className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Flower name (optional)..."
+              placeholder="Flower name (required)..."
               value={flower}
               onChange={(e) => setFlower(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -189,7 +201,7 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
           <Button
             onClick={handleSearch}
             className="bg-gradient-nature hover:opacity-90 transition-opacity"
-            disabled={!region.trim()}
+            disabled={!region.trim() || !flower.trim()}
           >
             <Search className="h-4 w-4 mr-2" />
             Explore

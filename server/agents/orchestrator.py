@@ -271,12 +271,25 @@ class BloomExplanationOrchestrator:
         ]
         
         # Format climate data
-        climate = context.get('climate', 'Climate data not available')
-        if isinstance(climate, dict):
+        climate = context.get('climate', None)
+        if climate is None:
+            # Generate placeholder climate data based on region and flower
+            # This provides better UX when real climate data isn't available
+            from agents.explanation_agent import FLOWER_DATABASE
+            flower_lower = flower.lower()
+            flower_info = FLOWER_DATABASE.get(flower_lower, {})
+            flower_climate = flower_info.get("climate", "unknown")
+            
+            # Generate a more informative message when climate data is missing
+            climate = f"Climate requirements: {flower_climate} | Region: {region}"
+        elif isinstance(climate, dict):
             # Convert dict to readable string if climate_data was provided
             temp = climate.get('temperature', 'N/A')
             precip = climate.get('precipitation', 'N/A')
             climate = f"Temperature: {temp}°C, Precipitation: {precip}mm"
+        else:
+            # If it's already a string, use as-is
+            climate = climate
         
         return {
             "region": region,

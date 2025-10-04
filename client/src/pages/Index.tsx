@@ -33,7 +33,7 @@ const Index = () => {
         region,
         flower,
         coordinates,
-        use_mock_search: true, // Set to true for faster testing
+        use_mock_search: false, // Set to false to use real data
       });
 
       console.log("Received bloom data:", data);
@@ -120,7 +120,7 @@ const Index = () => {
             <>
               <InfoPanel
                 title="Welcome to BloomWatch"
-                content="Explore global flower blooms using real-time satellite data. Search for any region to see NDVI-based abundance maps, or upload a flower image to identify species and discover their most abundant locations."
+                content="Explore global flower blooms using real-time satellite data. Search for any region to see abundance maps, or upload a flower image to identify species and discover their most abundant locations."
                 stats={[
                   { label: "Global Coverage", value: "195 countries" },
                   { label: "Flower Species", value: "12,000+" },
@@ -131,7 +131,7 @@ const Index = () => {
               <InfoPanel
                 title="How It Works"
                 content={`1. Search for a region or upload a flower image
-2. View real-time NDVI abundance data
+2. View real-time abundance data
 3. Explore bloom patterns and ecological insights
 4. Discover optimal viewing seasons`}
               />

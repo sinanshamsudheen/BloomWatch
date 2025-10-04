@@ -39,6 +39,12 @@ const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: 
     return regionMap[regionName] || [0, 0];
   }, []);
 
+  // Function to determine zoom level (fixed at broader scale for all regions)
+  const getZoomLevel = useCallback((regionName?: string) => {
+    // Return zoom level 4 for broader view suitable for most regions
+    return 4;
+  }, []);
+
   useEffect(() => {
     if (mapContainer.current && !map.current) {
       // Initialize MapLibre GL JS with custom globe style
@@ -133,10 +139,13 @@ const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: 
       // Use provided coordinates or fall back to lookup
       const [lng, lat] = coordinates || getRegionCoordinates(region);
       
+      // Determine zoom level based on region popularity
+      const zoomLevel = getZoomLevel(region);
+
       // Animate to the new location with smooth globe rotation
       map.current.flyTo({
         center: [lng, lat],
-        zoom: 8,
+        zoom: zoomLevel,
         pitch: 45,
         bearing: 0,
         duration: 2500,
@@ -185,7 +194,7 @@ const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: 
 
       toast.success(`Zoomed to ${region}${flower ? ` for ${flower}` : ""}`);
     }
-  }, [region, flower, coordinates, mapLoaded, getRegionCoordinates]);
+  }, [region, flower, coordinates, mapLoaded, getRegionCoordinates, getZoomLevel]);
 
   // Add NDVI abundance overlay when available (this would come from the backend in a real implementation)
   useEffect(() => {
