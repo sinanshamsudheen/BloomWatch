@@ -377,3 +377,211 @@ async def get_mock_search_results(region: str, flower: str) -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat(),
         "mock": True
     }
+
+
+async def search_top_regions(
+    country: str,
+    flower: str,
+    serpapi_key: str = "",
+    newsapi_key: str = "",
+    max_results: int = 10,
+    llm: Optional[ChatOpenAI] = None
+) -> Dict[str, Any]:
+    """
+    Search for regions/locations within a country with highest abundance of a specific flower
+    
+    Args:
+        country: Country name to search within
+        flower: Flower species name
+        serpapi_key: SerpAPI key
+        newsapi_key: NewsAPI key
+        max_results: Maximum search results to fetch
+        llm: Optional LLM for synthesis
+    
+    Returns:
+        Dictionary with top regions and their details
+    """
+    try:
+        # Construct targeted search query for finding top regions
+        search_query = f'"{flower}" flowers best regions locations grow "{country}" where to find most abundant'
+        
+        logger.info(f"Searching for top {flower} regions in {country}")
+        
+        # Perform search
+        search_results = await unified_search(
+            region=country,
+            flower=flower,
+            serpapi_key=serpapi_key,
+            newsapi_key=newsapi_key,
+            max_results=max_results
+        )
+        
+        # Extract region mentions from search results
+        regions = extract_top_regions_from_search(search_results, flower, country)
+        
+        # If we have an LLM, use it to better analyze the results
+        if llm and search_results:
+            try:
+                synthesis = await synthesize_region_results(search_results, flower, country, llm)
+                regions['ai_summary'] = synthesis
+            except Exception as e:
+                logger.error(f"Failed to synthesize region results: {str(e)}")
+        
+        return regions
+        
+    except Exception as e:
+        logger.error(f"Failed to search top regions: {str(e)}")
+        return {
+            "country": country,
+            "flower": flower,
+            "top_regions": [],
+            "error": str(e)
+        }
+
+
+def extract_top_regions_from_search(
+    search_results: List[Dict[str, Any]], 
+    flower: str, 
+    country: str
+) -> Dict[str, Any]:
+    """
+    Extract and rank regions from search results
+    
+    Args:
+        search_results: List of search result dictionaries
+        flower: Flower name
+        country: Country name
+    
+    Returns:
+        Dictionary with ranked regions and coordinates
+    """
+    import re
+    from collections import Counter
+    
+    # Common region/location indicators
+    location_patterns = [
+        r'in ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
+        r'at ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
+        r'near ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*) region',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*) valley',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*) district',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*) province',
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*) state',
+    ]
+    
+    # Combine all text from search results
+    all_text = " ".join([
+        f"{result.get('title', '')} {result.get('snippet', '')}"
+        for result in search_results
+    ])
+    
+    # Extract potential region names
+    found_regions = []
+    for pattern in location_patterns:
+        matches = re.findall(pattern, all_text)
+        found_regions.extend(matches)
+    
+    # Count frequency of each region mention
+    region_counts = Counter(found_regions)
+    
+    # Filter out common non-region words
+    stop_words = {'The', 'This', 'That', 'These', 'Those', 'Many', 'Some', 'Most', 
+                  'Each', 'Every', 'All', 'Both', 'Few', 'More', 'Other'}
+    region_counts = {k: v for k, v in region_counts.items() if k not in stop_words}
+    
+    # Get top 5 regions by mention frequency
+    top_regions_list = region_counts.most_common(5)
+    
+    # Format regions with estimated coordinates (would need geocoding API for real coords)
+    regions_with_data = []
+    for region_name, mentions in top_regions_list:
+        regions_with_data.append({
+            "name": region_name,
+            "country": country,
+            "full_name": f"{region_name}, {country}",
+            "mentions": mentions,
+            "confidence": min(mentions / len(search_results) * 100, 100) if search_results else 0,
+            # Placeholder coordinates - should be replaced with geocoding
+            "coordinates": None,
+            "needs_geocoding": True
+        })
+    
+    # If no regions found, return country-level fallback
+    if not regions_with_data:
+        regions_with_data = [{
+            "name": country,
+            "country": country,
+            "full_name": country,
+            "mentions": 0,
+            "confidence": 50,
+            "coordinates": None,
+            "needs_geocoding": True,
+            "note": "No specific regions identified - showing country level"
+        }]
+    logger.info(f"Extracted regions: {regions_with_data}")
+    return {
+        "country": country,
+        "flower": flower,
+        "top_regions": regions_with_data[:5],
+        "total_sources": len(search_results),
+        "extraction_method": "text_analysis"
+    }
+
+
+async def synthesize_region_results(
+    search_results: List[Dict[str, Any]],
+    flower: str,
+    country: str,
+    llm: ChatOpenAI
+) -> str:
+    """
+    Use LLM to synthesize search results and identify top regions
+    
+    Args:
+        search_results: Search results
+        flower: Flower name
+        country: Country name
+        llm: LLM instance
+    
+    Returns:
+        Synthesized text identifying top regions
+    """
+    try:
+        agent = create_web_search_agent(llm)
+        
+        results_text = "\n".join([
+            f"{i+1}. {r.get('title', 'No title')}: {r.get('snippet', 'No description')}"
+            for i, r in enumerate(search_results[:10])
+        ])
+        
+        task_description = f"""Based on the following search results, identify the TOP 3-5 SPECIFIC REGIONS or locations within {country} where {flower} flowers are most abundant or commonly found.
+
+Search Results:
+{results_text}
+
+Your task:
+1. Identify specific region names, cities, valleys, provinces, or districts mentioned
+2. Rank them by how frequently and prominently they appear
+3. Note any mentions of abundance, popularity, or famous growing areas
+4. Return a concise list of the top 3-5 locations
+
+Format your response as:
+1. [Region Name] - [Brief reason why it's notable for this flower]
+2. [Region Name] - [Brief reason]
+...
+
+Be specific with location names. If no specific regions are mentioned, state that clearly."""
+
+        task = Task(
+            description=task_description,
+            agent=agent,
+            expected_output="A ranked list of 3-5 specific regions with brief explanations"
+        )
+        
+        result = task.execute()
+        return str(result) if result else "No specific regions identified"
+        
+    except Exception as e:
+        logger.error(f"Failed to synthesize region results: {str(e)}")
+        return f"Analysis unavailable: {str(e)}"

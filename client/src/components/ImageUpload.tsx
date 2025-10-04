@@ -67,7 +67,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         <div className="p-1.5 rounded-lg bg-gradient-bloom">
           <ImageIcon className="h-4 w-4 text-accent-foreground" />
         </div>
-        <h3 className="text-sm font-semibold text-foreground">Upload Flower Image</h3>
+        <h3 className="text-base font-semibold text-foreground">Upload Flower Image</h3>
       </div>
 
       <div
@@ -100,17 +100,17 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         ) : (
           <div className="text-center py-2">
             <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-xs text-foreground font-medium mb-1">
+            <p className="text-sm text-foreground font-medium mb-1">
               Click to upload or drag and drop
             </p>
-            <p className="text-[10px] text-muted-foreground mb-2">
+            <p className="text-xs text-muted-foreground mb-2">
               PNG, JPG, WEBP up to 10MB
             </p>
             <Button
               onClick={() => inputRef.current?.click()}
               variant="outline"
               size="sm"
-              className="border-primary text-primary hover:bg-primary/10 h-7 text-xs"
+              className="border-primary text-primary hover:bg-primary/10 h-7 text-sm"
             >
               Select Image
             </Button>
@@ -127,7 +127,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
 
       {preview && (
         <Button
-          className="w-full mt-3 bg-gradient-bloom hover:opacity-90 transition-opacity h-8 text-xs"
+          className="w-full mt-3 bg-gradient-bloom hover:opacity-90 transition-opacity h-8 text-sm"
           onClick={() => toast.success("Image classification started!")}
         >
           Classify Flower

@@ -155,15 +155,15 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
                   >
                     <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
+                      <p className="text-base font-medium text-foreground truncate">
                         {suggestion.name || suggestion.display_name.split(',')[0]}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-sm text-muted-foreground truncate">
                         {suggestion.display_name}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-sm text-muted-foreground mt-0.5">
                         {suggestion.type && (
-                          <span className="inline-block px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] uppercase">
+                          <span className="inline-block px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs uppercase">
                             {suggestion.type}
                           </span>
                         )}

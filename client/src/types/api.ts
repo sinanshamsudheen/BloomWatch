@@ -55,3 +55,31 @@ export interface ExplanationRequest {
   date?: string;
   use_mock_search?: boolean;
 }
+
+// Top Regions Types
+export interface RegionInfo {
+  name: string;
+  country: string;
+  full_name: string;
+  mentions: number;
+  confidence: number;
+  coordinates: [number, number] | null;
+  needs_geocoding: boolean;
+  note?: string;
+}
+
+export interface TopRegionsRequest {
+  country: string;
+  flower: string;
+  max_results?: number;
+}
+
+export interface TopRegionsResponse {
+  country: string;
+  flower: string;
+  top_regions: RegionInfo[];
+  total_sources: number;
+  extraction_method: string;
+  ai_summary?: string;
+  error?: string;
+}

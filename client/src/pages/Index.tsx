@@ -5,7 +5,7 @@ import ImageUpload from "@/components/ImageUpload";
 import MapView from "@/components/MapView";
 import { Leaf, Loader2 } from "lucide-react";
 import { BloomWatchAPI } from "@/services/api";
-import { BloomExplanation } from "@/types/api";
+import { BloomExplanation, RegionInfo } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -14,6 +14,7 @@ const Index = () => {
   const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
   const [bloomData, setBloomData] = useState<BloomExplanation | null>(null);
+  const [topRegions, setTopRegions] = useState<RegionInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -37,6 +38,26 @@ const Index = () => {
 
       console.log("Received bloom data:", data);
       setBloomData(data);
+      
+      // Extract country from region (simple approach - split by comma)
+      const country = region.includes(',') ? region.split(',').pop()?.trim() : region;
+      
+      // Fetch top regions for the selected flower in the country
+      if (country && flower) {
+        try {
+          console.log(`Fetching top regions for ${flower} in ${country}`);
+          const regionsData = await BloomWatchAPI.getTopRegions({
+            country,
+            flower,
+            max_results: 10
+          });
+          console.log("Top regions data:", regionsData);
+          setTopRegions(regionsData.top_regions);
+        } catch (regionsError) {
+          console.error("Failed to fetch top regions:", regionsError);
+          // Don't show error toast, just log it
+        }
+      }
       
       toast({
         title: "✅ Bloom data loaded",
@@ -109,7 +130,10 @@ const Index = () => {
               
               <InfoPanel
                 title="How It Works"
-                content="1. Search for a region or upload a flower image\n2. View real-time NDVI abundance data\n3. Explore bloom patterns and ecological insights\n4. Discover optimal viewing seasons"
+                content={`1. Search for a region or upload a flower image
+2. View real-time NDVI abundance data
+3. Explore bloom patterns and ecological insights
+4. Discover optimal viewing seasons`}
               />
             </>
           ) : loading ? (
@@ -153,7 +177,9 @@ const Index = () => {
 
               <InfoPanel
                 title="Additional Details"
-                content={`Scientific Name: ${bloomData.flower.scientific_name}\nBloom Period: ${bloomData.known_bloom_period}\nClimate: ${bloomData.climate}`}
+                content={`Scientific Name: ${bloomData.flower.scientific_name}
+Bloom Period: ${bloomData.known_bloom_period}
+Climate: ${bloomData.climate}`}
               />
             </>
           ) : (
@@ -179,6 +205,7 @@ const Index = () => {
             region={selectedRegion} 
             flower={selectedFlower}
             coordinates={selectedCoordinates}
+            topRegions={topRegions}
             onLocationSelect={handleLocationSelect}
           />
         </main>

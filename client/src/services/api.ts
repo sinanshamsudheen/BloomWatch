@@ -88,6 +88,43 @@ export class BloomWatchAPI {
       return false;
     }
   }
+
+  /**
+   * Get top regions for a flower in a country
+   */
+  static async getTopRegions(
+    request: import("@/types/api").TopRegionsRequest
+  ): Promise<import("@/types/api").TopRegionsResponse> {
+    try {
+      console.log(`Calling API: ${API_BASE_URL}/api/top-regions`);
+      console.log("Request payload:", request);
+
+      const response = await fetch(`${API_BASE_URL}/api/top-regions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(request),
+        mode: "cors",
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Top regions response:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch top regions:", error);
+      throw error;
+    }
+  }
 }
 
 // Mock data fallback for development/testing

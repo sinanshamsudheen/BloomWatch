@@ -17,14 +17,14 @@ const InfoPanel = ({ title, content, stats, className }: InfoPanelProps) => {
           <div className="p-1.5 rounded-lg bg-gradient-nature">
             <Leaf className="h-4 w-4 text-primary-foreground" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         </div>
       )}
       
       {content && (
-        <div className="mb-3 text-xs text-muted-foreground leading-relaxed">
+        <div className="mb-3 text-base text-muted-foreground leading-relaxed whitespace-pre-line">
           {typeof content === 'string' ? (
-            <div className="line-clamp-6 whitespace-pre-wrap">{content}</div>
+            <div>{content}</div>
           ) : (
             content
           )}
@@ -35,13 +35,13 @@ const InfoPanel = ({ title, content, stats, className }: InfoPanelProps) => {
         <div className="space-y-2">
           {stats.map((stat, index) => (
             <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-              <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              <span className="text-sm font-medium text-foreground flex items-center gap-1.5">
                 {index === 0 && <TrendingUp className="h-3 w-3 text-primary" />}
                 {index === 1 && <MapPin className="h-3 w-3 text-accent" />}
                 {index === 2 && <Info className="h-3 w-3 text-info" />}
                 {stat.label}
               </span>
-              <span className="text-xs font-bold text-primary">{stat.value}</span>
+              <span className="text-sm font-bold text-primary">{stat.value}</span>
             </div>
           ))}
         </div>

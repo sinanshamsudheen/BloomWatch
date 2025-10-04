@@ -3,19 +3,22 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { RegionInfo } from "@/types/api";
 
 interface MapViewProps {
   region?: string;
   flower?: string;
   coordinates?: [number, number];
+  topRegions?: RegionInfo[];
   onLocationSelect?: (location: string, coordinates: [number, number]) => void;
 }
 
-const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps) => {
+const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   // Function to get coordinates for a region (simplified for demo)
   const getRegionCoordinates = useCallback((regionName?: string) => {
@@ -106,43 +109,6 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
           maxWidth: 100,
           unit: 'metric'
         }), "bottom-right");
-      });
-
-      // Handle map clicks for location selection
-      map.current.on("click", async (e) => {
-        const { lng, lat } = e.lngLat;
-        
-        // Show loading toast
-        const loadingToast = toast.loading("Fetching location...");
-        
-        try {
-          // Reverse geocode the clicked location
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-            {
-              headers: {
-                'User-Agent': 'BloomWatch/1.0'
-              }
-            }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            const locationName = data.display_name;
-            
-            // Call the callback with the selected location
-            if (onLocationSelect) {
-              onLocationSelect(locationName, [lng, lat]);
-            }
-            
-            toast.success("Location selected!", { id: loadingToast });
-          } else {
-            toast.error("Could not fetch location details", { id: loadingToast });
-          }
-        } catch (error) {
-          console.error("Error reverse geocoding:", error);
-          toast.error("Failed to get location details", { id: loadingToast });
-        }
       });
 
       // Handle style load error
@@ -297,6 +263,169 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
     }
   }, [region, coordinates, mapLoaded, getRegionCoordinates]);
 
+  // Highlight top regions with markers
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !topRegions || topRegions.length === 0) {
+      return;
+    }
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Remove existing top regions layers
+    if (map.current.getLayer("top-regions-circles")) {
+      map.current.removeLayer("top-regions-circles");
+    }
+    if (map.current.getLayer("top-regions-labels")) {
+      map.current.removeLayer("top-regions-labels");
+    }
+    if (map.current.getSource("top-regions")) {
+      map.current.removeSource("top-regions");
+    }
+
+    // Filter regions that have coordinates
+    const regionsWithCoords = topRegions.filter(r => r.coordinates && r.coordinates.length === 2);
+    
+    if (regionsWithCoords.length === 0) {
+      toast.info("No coordinates available for top regions");
+      return;
+    }
+
+    // Create GeoJSON for top regions
+    const regionsGeoJSON: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+      type: "FeatureCollection",
+      features: regionsWithCoords.map((region, index) => ({
+        type: "Feature",
+        properties: {
+          name: region.name,
+          full_name: region.full_name,
+          rank: index + 1,
+          confidence: region.confidence,
+          mentions: region.mentions
+        },
+        geometry: {
+          type: "Point",
+          coordinates: region.coordinates!
+        }
+      }))
+    };
+
+    // Add source for top regions
+    map.current.addSource("top-regions", {
+      type: "geojson",
+      data: regionsGeoJSON
+    });
+
+    // Add circle layer for regions
+    map.current.addLayer({
+      id: "top-regions-circles",
+      type: "circle",
+      source: "top-regions",
+      paint: {
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          0, 8,
+          5, 15,
+          10, 25
+        ],
+        "circle-color": [
+          "step",
+          ["get", "rank"],
+          "#10B981", // Rank 1 - Green
+          2, "#3B82F6", // Rank 2 - Blue
+          3, "#F59E0B", // Rank 3 - Amber
+          4, "#EF4444", // Rank 4 - Red
+          5, "#8B5CF6"  // Rank 5 - Purple
+        ],
+        "circle-opacity": 0.8,
+        "circle-stroke-width": 3,
+        "circle-stroke-color": "#FFFFFF",
+        "circle-stroke-opacity": 1
+      }
+    });
+
+    // Add labels for regions
+    map.current.addLayer({
+      id: "top-regions-labels",
+      type: "symbol",
+      source: "top-regions",
+      layout: {
+        "text-field": ["concat", ["to-string", ["get", "rank"]], ". ", ["get", "name"]],
+        "text-font": ["Open Sans Bold"],
+        "text-size": 14,
+        "text-offset": [0, 2],
+        "text-anchor": "top"
+      },
+      paint: {
+        "text-color": "#FFFFFF",
+        "text-halo-color": "#000000",
+        "text-halo-width": 2
+      }
+    });
+
+    // Add click handlers for regions
+    map.current.on("click", "top-regions-circles", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      
+      const feature = e.features[0];
+      const properties = feature.properties!;
+      
+      // Create popup content
+      const popupContent = `
+        <div style="font-family: system-ui; padding: 8px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">
+            #${properties.rank} ${properties.name}
+          </h3>
+          <p style="margin: 4px 0; font-size: 13px; color: #666;">
+            <strong>Mentions:</strong> ${properties.mentions}
+          </p>
+          <p style="margin: 4px 0; font-size: 13px; color: #666;">
+            <strong>Confidence:</strong> ${properties.confidence.toFixed(1)}%
+          </p>
+          <p style="margin: 8px 0 0 0; font-size: 12px; color: #888;">
+            ${properties.full_name}
+          </p>
+        </div>
+      `;
+      
+      new maplibregl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(popupContent)
+        .addTo(map.current!);
+    });
+
+    // Change cursor on hover
+    map.current.on("mouseenter", "top-regions-circles", () => {
+      if (map.current) map.current.getCanvas().style.cursor = "pointer";
+    });
+
+    map.current.on("mouseleave", "top-regions-circles", () => {
+      if (map.current) map.current.getCanvas().style.cursor = "";
+    });
+
+    // Fit map to show all regions
+    if (regionsWithCoords.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      regionsWithCoords.forEach(region => {
+        if (region.coordinates) {
+          bounds.extend(region.coordinates as [number, number]);
+        }
+      });
+      
+      map.current.fitBounds(bounds, {
+        padding: { top: 100, bottom: 100, left: 100, right: 100 },
+        maxZoom: 6,
+        duration: 2000
+      });
+      
+      toast.success(`Showing ${regionsWithCoords.length} top region${regionsWithCoords.length > 1 ? 's' : ''} for ${flower}`);
+    }
+
+  }, [topRegions, mapLoaded, flower]);
+
   // Function to reset map to initial globe view
   const resetView = () => {
     if (map.current) {
@@ -346,25 +475,52 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
 
       {/* Legend */}
       <div className="absolute bottom-6 left-6 bg-card/95 backdrop-blur-sm rounded-lg p-4 border border-border shadow-soft z-20">
-        <h4 className="text-sm font-semibold text-foreground mb-3">NDVI Abundance</h4>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gray-500" />
-            <span className="text-xs text-muted-foreground">Low (0-0.3)</span>
+        <h4 className="text-sm font-semibold text-foreground mb-3">
+          {topRegions && topRegions.length > 0 ? "Top Regions" : "Abundance"}
+        </h4>
+        {topRegions && topRegions.length > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white" />
+              <span className="text-xs text-muted-foreground">Rank 1</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white" />
+              <span className="text-xs text-muted-foreground">Rank 2</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-white" />
+              <span className="text-xs text-muted-foreground">Rank 3</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white" />
+              <span className="text-xs text-muted-foreground">Rank 4</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white" />
+              <span className="text-xs text-muted-foreground">Rank 5</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-green-500" />
-            <span className="text-xs text-muted-foreground">Low-Medium (0.3-0.6)</span>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gray-500" />
+              <span className="text-xs text-muted-foreground">Low (0-0.3)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-500" />
+              <span className="text-xs text-muted-foreground">Low-Medium (0.3-0.6)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-amber-500" />
+              <span className="text-xs text-muted-foreground">Medium-High (0.6-0.8)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-red-500" />
+              <span className="text-xs text-muted-foreground">Very High (0.8-1.0)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-500" />
-            <span className="text-xs text-muted-foreground">Medium-High (0.6-0.8)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500" />
-            <span className="text-xs text-muted-foreground">Very High (0.8-1.0)</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
