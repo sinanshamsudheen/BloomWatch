@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface InfoPanelProps {
   title?: string;
-  content?: string;
+  content?: string | React.ReactNode;
   stats?: { label: string; value: string }[];
   className?: string;
 }
@@ -22,8 +22,12 @@ const InfoPanel = ({ title, content, stats, className }: InfoPanelProps) => {
       )}
       
       {content && (
-        <div className="mb-3 text-xs text-muted-foreground leading-relaxed line-clamp-3">
-          {content}
+        <div className="mb-3 text-xs text-muted-foreground leading-relaxed">
+          {typeof content === 'string' ? (
+            <div className="line-clamp-6 whitespace-pre-wrap">{content}</div>
+          ) : (
+            content
+          )}
         </div>
       )}
 

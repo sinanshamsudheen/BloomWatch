@@ -17,7 +17,8 @@ from agents.explanation_agent import (
 )
 from agents.web_search_agent import (
     perform_web_search,
-    get_mock_search_results
+    get_mock_search_results,
+    extract_bloom_data_from_search
 )
 
 logger = logging.getLogger(__name__)
@@ -244,9 +245,26 @@ class BloomExplanationOrchestrator:
         search_result: Dict[str, Any],
         start_time: datetime
     ) -> Dict[str, Any]:
-        """Build complete response"""
+        """Build complete response using search-derived data"""
         
         processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+        
+        # Extract bloom data from search results
+        raw_results = search_result.get("raw_results", [])
+        bloom_data = extract_bloom_data_from_search(raw_results, flower, region)
+        
+        # Map bloom_status to abundance
+        abundance_map = {
+            "active": "high",
+            "upcoming": "medium",
+            "past": "low",
+            "not_suitable": "none",
+            "unknown": "medium"
+        }
+        
+        abundance_level = bloom_data.get("abundance", "medium")
+        if abundance_level == "unknown":
+            abundance_level = abundance_map.get(bloom_data.get("bloom_status", "unknown"), "medium")
         
         # Extract key factors
         factors = [
@@ -272,11 +290,11 @@ class BloomExplanationOrchestrator:
                 "common_name": flower,
                 "scientific_name": context['flower']['scientific_name']
             },
-            "ndvi_score": context['ndvi_score'],
-            "abundance_level": context['abundance_level'],
-            "season": context['season'],
+            "ndvi_score": context['ndvi_score'],  # Keep for reference but not used in logic
+            "abundance_level": abundance_level,  # From search data
+            "season": bloom_data.get("season", context['season']),  # Prefer search data
             "climate": climate,
-            "known_bloom_period": context['known_bloom_period'],
+            "known_bloom_period": bloom_data.get("season", context['known_bloom_period']),  # From search data
             "notes": context.get('notes', ''),
             "explanation": explanation,
             "factors": factors,

@@ -33,18 +33,81 @@ def get_current_season() -> str:
         return "Winter"
 
 
-# Flower database for quick reference
+# Flower database for quick reference with climate requirements
 FLOWER_DATABASE = {
-    "rose": {"scientific": "Rosa", "bloom_period": "May to September"},
-    "rhododendron": {"scientific": "Rhododendron arboreum", "bloom_period": "March to May"},
-    "sunflower": {"scientific": "Helianthus annuus", "bloom_period": "June to September"},
-    "tulip": {"scientific": "Tulipa", "bloom_period": "March to May"},
-    "cherry blossom": {"scientific": "Prunus serrulata", "bloom_period": "March to April"},
-    "lotus": {"scientific": "Nelumbo nucifera", "bloom_period": "June to August"},
-    "jasmine": {"scientific": "Jasminum", "bloom_period": "June to September"},
-    "marigold": {"scientific": "Tagetes", "bloom_period": "July to October"},
-    "lavender": {"scientific": "Lavandula", "bloom_period": "June to August"},
-    "orchid": {"scientific": "Orchidaceae", "bloom_period": "Year-round (varies)"},
+    "rose": {
+        "scientific": "Rosa", 
+        "bloom_period": "May to September",
+        "climate": "temperate",
+        "regions": "worldwide"
+    },
+    "rhododendron": {
+        "scientific": "Rhododendron arboreum", 
+        "bloom_period": "March to May",
+        "climate": "cool temperate, mountainous",
+        "regions": "Himalayas, high altitude"
+    },
+    "sunflower": {
+        "scientific": "Helianthus annuus", 
+        "bloom_period": "June to September",
+        "climate": "temperate to warm",
+        "regions": "worldwide"
+    },
+    "tulip": {
+        "scientific": "Tulipa", 
+        "bloom_period": "March to May",
+        "climate": "cold temperate (requires winter chill)",
+        "regions": "Kashmir, Netherlands, cold regions",
+        "note": "Requires cold winter temperatures (vernalization). Not native to tropical regions."
+    },
+    "cherry blossom": {
+        "scientific": "Prunus serrulata", 
+        "bloom_period": "March to April",
+        "climate": "temperate",
+        "regions": "Japan, Korea, temperate zones"
+    },
+    "lotus": {
+        "scientific": "Nelumbo nucifera", 
+        "bloom_period": "June to August",
+        "climate": "tropical to subtropical",
+        "regions": "Asia, tropical wetlands"
+    },
+    "jasmine": {
+        "scientific": "Jasminum", 
+        "bloom_period": "June to September",
+        "climate": "tropical to subtropical",
+        "regions": "India, Southeast Asia, tropical"
+    },
+    "marigold": {
+        "scientific": "Tagetes", 
+        "bloom_period": "July to October",
+        "climate": "tropical to temperate",
+        "regions": "worldwide"
+    },
+    "lavender": {
+        "scientific": "Lavandula", 
+        "bloom_period": "June to August",
+        "climate": "Mediterranean, temperate",
+        "regions": "Mediterranean, temperate dry"
+    },
+    "orchid": {
+        "scientific": "Orchidaceae", 
+        "bloom_period": "Year-round (varies)",
+        "climate": "tropical to temperate",
+        "regions": "worldwide (diverse)"
+    },
+    "hibiscus": {
+        "scientific": "Hibiscus rosa-sinensis",
+        "bloom_period": "Year-round in tropics",
+        "climate": "tropical",
+        "regions": "Kerala, tropical regions"
+    },
+    "bougainvillea": {
+        "scientific": "Bougainvillea",
+        "bloom_period": "Year-round in tropics",
+        "climate": "tropical to subtropical",
+        "regions": "Kerala, tropical regions"
+    },
 }
 
 
@@ -64,6 +127,44 @@ def create_explanation_agent(llm: ChatOpenAI) -> Agent:
     )
 
 
+def check_climate_compatibility(flower: str, region: str) -> Dict[str, Any]:
+    """Check if flower is climatically compatible with region"""
+    flower_lower = flower.lower()
+    region_lower = region.lower()
+    
+    # Tropical regions
+    tropical_keywords = ["kerala", "tropical", "amazon", "equator", "singapore", "malaysia", "indonesia"]
+    # Cold/temperate regions  
+    cold_keywords = ["kashmir", "himalaya", "netherlands", "canada", "alaska", "siberia", "scandinavia"]
+    
+    is_tropical = any(keyword in region_lower for keyword in tropical_keywords)
+    is_cold = any(keyword in region_lower for keyword in cold_keywords)
+    
+    flower_info = FLOWER_DATABASE.get(flower_lower, {})
+    climate_req = flower_info.get("climate", "unknown")
+    
+    # Check compatibility
+    compatible = True
+    warning = None
+    
+    if "tulip" in flower_lower and is_tropical:
+        compatible = False
+        warning = "Tulips require cold winter temperatures and do not naturally grow in tropical climates like this region."
+    elif "hibiscus" in flower_lower and is_cold:
+        compatible = False
+        warning = "Hibiscus is a tropical flower and cannot survive in cold climates."
+    elif "cherry blossom" in flower_lower and is_tropical:
+        compatible = False
+        warning = "Cherry blossoms require temperate climates with distinct seasons and cold winters."
+    
+    return {
+        "compatible": compatible,
+        "warning": warning,
+        "flower_climate": climate_req,
+        "region_type": "tropical" if is_tropical else "cold/temperate" if is_cold else "unknown"
+    }
+
+
 def prepare_explanation_context(
     region: str,
     flower: str,
@@ -78,8 +179,13 @@ def prepare_explanation_context(
     flower_lower = flower.lower()
     flower_info = FLOWER_DATABASE.get(flower_lower, {
         "scientific": "Unknown species",
-        "bloom_period": "Varies by region"
+        "bloom_period": "Varies by region",
+        "climate": "unknown",
+        "regions": "unknown"
     })
+    
+    # Check climate compatibility
+    compatibility = check_climate_compatibility(flower, region)
     
     context = {
         "region": region,
@@ -111,46 +217,63 @@ def prepare_explanation_context(
         context["web_research"] = web_search_summary
     
     # Add contextual notes based on NDVI score
-    if ndvi_score >= 0.8:
-        context["notes"] = "Peak blooming observed, excellent vegetation health"
-    elif ndvi_score >= 0.6:
-        context["notes"] = "Active bloom period, favorable conditions"
-    elif ndvi_score >= 0.3:
-        context["notes"] = "Moderate bloom activity, typical for season"
+    if compatibility["warning"]:
+        context["notes"] = f"⚠️ Climate Warning: {compatibility['warning']}"
+        context["climate_compatible"] = False
     else:
-        context["notes"] = "Low vegetation activity, may be off-season or stress conditions"
+        context["climate_compatible"] = True
+        if ndvi_score >= 0.8:
+            context["notes"] = "Peak blooming observed, excellent vegetation health"
+        elif ndvi_score >= 0.6:
+            context["notes"] = "Active bloom period, favorable conditions"
+        elif ndvi_score >= 0.3:
+            context["notes"] = "Moderate bloom activity, typical for season"
+        else:
+            context["notes"] = "Low vegetation activity, may be off-season or stress conditions"
+    
+    # Add climate compatibility info
+    context["compatibility"] = compatibility
     
     return context
 
 
 def create_explanation_task(agent: Agent, context: Dict[str, Any]) -> Task:
-    """Create the explanation generation task"""
+    """Create the explanation generation task based on web research"""
     
     web_research_section = ""
     if context.get("web_research"):
-        web_research_section = f"\n- Recent Research & News: {context['web_research']}"
+        web_research_section = f"\n\nRecent Web Research Findings:\n{context['web_research']}\n"
     
-    description = f"""Generate a comprehensive, scientifically accurate explanation of the blooming patterns for the specified flower.
+    climate_warning = ""
+    if not context.get("climate_compatible", True):
+        climate_warning = f"\n\n⚠️ CLIMATE INCOMPATIBILITY: {context['compatibility']['warning']}"
+    
+    description = f"""Generate a factual, research-based explanation of blooming patterns using ONLY the web research data provided.
 
 Context Data:
 - Region: {context['region']}
 - Flower: {context['flower']['common_name']} ({context['flower']['scientific_name']})
-- Current NDVI Score: {context['ndvi_score']} (Abundance Level: {context['abundance_level']})
 - Season: {context['season']}
 - Known Bloom Period: {context['known_bloom_period']}
-- Climate: {context.get('climate', 'Not available')}
-- Observations: {context['notes']}{web_research_section}
+- Flower Climate Requirements: {context['flower'].get('climate', 'unknown')}
+- Climate Compatibility: {context['compatibility']}{climate_warning}{web_research_section}
 
-Provide a comprehensive explanation covering:
-1. Current bloom status and what the NDVI score indicates
-2. Ecological factors influencing bloom patterns in this region
-3. Seasonal timing and photoperiod effects
-4. Climate and environmental conditions
-5. Ecological or agricultural significance
-6. Any notable patterns or recommendations for observers
+CRITICAL INSTRUCTIONS:
+1. Base your explanation ENTIRELY on the web research findings provided above
+2. DO NOT make assumptions - only use information from the search results
+3. If the flower is climatically incompatible with the region, state this clearly and explain why it cannot grow there naturally
+4. Cite specific findings from the research (e.g., "Research indicates...", "Recent studies show...")
+5. If data is limited, acknowledge this honestly
 
-Keep the explanation informative yet accessible, around 150-250 words. Be confident and authoritative, 
-incorporating the latest research findings if available."""
+Your explanation should cover:
+1. Whether this flower actually grows/blooms in this region (based on search results)
+2. Climate compatibility and requirements
+3. Typical bloom season (if applicable)
+4. Ecological context from the research
+5. Any recent observations or news from the region
+6. Honest assessment if information is limited
+
+Keep it factual, honest, and based solely on the provided research. 150-250 words."""
 
     return Task(
         description=description,

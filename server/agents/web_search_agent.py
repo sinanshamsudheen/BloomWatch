@@ -143,9 +143,9 @@ async def unified_search(
     Returns:
         Combined list of search results
     """
-    # Construct search queries
-    general_query = f"{flower} bloom patterns {region} ecology phenology"
-    news_query = f"{flower} blooming {region} climate agriculture"
+    # Construct better search queries for accurate information
+    general_query = f'"{flower}" flowers grow naturally "{region}" climate requirements native'
+    news_query = f"{flower} flowering season {region} bloom timing climate"
     
     # Run searches concurrently
     serp_results, news_results = await asyncio.gather(
@@ -168,6 +168,86 @@ async def unified_search(
     logger.info(f"Combined {len(all_results)} total search results")
     
     return all_results
+
+
+def extract_bloom_data_from_search(results: List[Dict[str, Any]], flower: str, region: str) -> Dict[str, Any]:
+    """Extract structured bloom data from search results"""
+    if not results:
+        return {
+            "text_summary": "No recent web research available.",
+            "bloom_status": "unknown",
+            "season": "Data not available",
+            "abundance": "unknown",
+            "sources_count": 0
+        }
+    
+    # Combine all text for analysis
+    combined_text = ""
+    summary_parts = []
+    
+    for i, result in enumerate(results[:10], 1):
+        title = result.get('title', '').lower()
+        snippet = result.get('snippet', '').lower()
+        source = result.get('source', 'Unknown')
+        
+        combined_text += f" {title} {snippet}"
+        
+        if i <= 5:  # Store top 5 for display
+            summary_parts.append(f"{i}. [{source}] {result.get('title', 'No title')}: {result.get('snippet', 'No description')}")
+    
+    # Extract bloom status
+    bloom_status = "unknown"
+    if any(word in combined_text for word in ["blooming", "in bloom", "flowering now", "currently blooming"]):
+        bloom_status = "active"
+    elif any(word in combined_text for word in ["will bloom", "expected", "upcoming", "soon"]):
+        bloom_status = "upcoming"
+    elif any(word in combined_text for word in ["finished", "ended", "past bloom"]):
+        bloom_status = "past"
+    elif any(word in combined_text for word in ["cannot grow", "not suitable", "doesn't grow", "incompatible"]):
+        bloom_status = "not_suitable"
+    
+    # Extract season
+    import re
+    from datetime import datetime
+    
+    months = ["january", "february", "march", "april", "may", "june", 
+              "july", "august", "september", "october", "november", "december"]
+    found_months = [m for m in months if m in combined_text]
+    
+    if found_months:
+        season = f"{found_months[0].capitalize()}"
+        if len(found_months) > 1:
+            season += f"-{found_months[-1].capitalize()}"
+    elif "spring" in combined_text:
+        season = "Spring"
+    elif "summer" in combined_text:
+        season = "Summer"
+    elif "fall" in combined_text or "autumn" in combined_text:
+        season = "Autumn"
+    elif "winter" in combined_text:
+        season = "Winter"
+    elif "monsoon" in combined_text:
+        season = "Monsoon"
+    else:
+        season = "Varies by region"
+    
+    # Extract abundance
+    abundance = "medium"
+    if any(word in combined_text for word in ["abundant", "common", "widespread", "numerous"]):
+        abundance = "high"
+    elif any(word in combined_text for word in ["rare", "uncommon", "scarce", "limited"]):
+        abundance = "low"
+    elif any(word in combined_text for word in ["does not grow", "absent", "not found"]):
+        abundance = "none"
+    
+    return {
+        "text_summary": "\n".join(summary_parts),
+        "bloom_status": bloom_status,
+        "season": season,
+        "abundance": abundance,
+        "sources_count": len(results),
+        "combined_analysis": combined_text[:500]  # For debugging
+    }
 
 
 def synthesize_search_results(results: List[Dict[str, Any]]) -> str:

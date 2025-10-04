@@ -3,19 +3,57 @@ import SearchBar from "@/components/SearchBar";
 import InfoPanel from "@/components/InfoPanel";
 import ImageUpload from "@/components/ImageUpload";
 import MapView from "@/components/MapView";
-import { Leaf } from "lucide-react";
+import { Leaf, Loader2 } from "lucide-react";
+import { BloomWatchAPI } from "@/services/api";
+import { BloomExplanation } from "@/types/api";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>();
   const [selectedFlower, setSelectedFlower] = useState<string>();
   const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
+  const [bloomData, setBloomData] = useState<BloomExplanation | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSearch = (region: string, flower: string, coordinates?: [number, number]) => {
+  const handleSearch = async (region: string, flower: string, coordinates?: [number, number]) => {
     setSelectedRegion(region);
     setSelectedFlower(flower);
     setSelectedCoordinates(coordinates);
+    setLoading(true);
     setShowResults(true);
+
+    try {
+      console.log("Fetching bloom data for:", { region, flower, coordinates });
+      
+      // Fetch real data from backend
+      const data = await BloomWatchAPI.getBloomExplanation({
+        region,
+        flower,
+        ndvi_score: 0.75, // Default, can be calculated from satellite data
+        coordinates,
+        use_mock_search: true, // Set to true for faster testing
+      });
+
+      console.log("Received bloom data:", data);
+      setBloomData(data);
+      
+      toast({
+        title: "✅ Bloom data loaded",
+        description: `Found information about ${data.flower.common_name} in ${region}`,
+      });
+    } catch (error) {
+      console.error("Failed to fetch bloom data:", error);
+      toast({
+        title: "❌ Error loading data",
+        description: error instanceof Error ? error.message : "Could not connect to the server.",
+        variant: "destructive",
+      });
+      setBloomData(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLocationSelect = (location: string, coordinates: [number, number]) => {
@@ -75,21 +113,60 @@ const Index = () => {
                 content="1. Search for a region or upload a flower image\n2. View real-time NDVI abundance data\n3. Explore bloom patterns and ecological insights\n4. Discover optimal viewing seasons"
               />
             </>
-          ) : (
+          ) : loading ? (
+            <InfoPanel
+              title="Loading bloom data..."
+              content={
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm">AI agents are analyzing bloom patterns...</span>
+                </div>
+              }
+            />
+          ) : bloomData ? (
             <>
               <InfoPanel
-                title={selectedFlower ? `${selectedFlower} in ${selectedRegion}` : `Exploring ${selectedRegion}`}
-                content="Based on recent satellite imagery and NDVI analysis, this region shows high vegetation density with optimal bloom conditions. The data suggests peak flowering season is approaching."
+                title={`${bloomData.flower.common_name} in ${bloomData.region}`}
+                content={bloomData.notes}
                 stats={[
-                  { label: "NDVI Score", value: "0.78" },
-                  { label: "Bloom Coverage", value: "67%" },
-                  { label: "Best Season", value: "Spring" },
+                  { label: "NDVI Score", value: bloomData.ndvi_score.toFixed(2) },
+                  { label: "Abundance", value: bloomData.abundance_level },
+                  { label: "Season", value: bloomData.season },
                 ]}
               />
 
               <InfoPanel
-                title="Ecological Context"
-                content={`${selectedRegion} hosts diverse flora with ${selectedFlower ? `${selectedFlower} being particularly abundant` : "rich biodiversity"}. The region's climate and soil conditions create ideal growing environments. Recent weather patterns indicate favorable conditions for continued bloom development.`}
+                title="AI-Generated Ecological Explanation"
+                content={bloomData.explanation}
+              />
+
+              {bloomData.web_research.source_count > 0 && (
+                <InfoPanel
+                  title="Recent Research & News"
+                  content={bloomData.web_research.summary}
+                  stats={[
+                    { label: "Sources Found", value: bloomData.web_research.source_count.toString() },
+                    { label: "Processing Time", value: `${bloomData.processing_time_ms.toFixed(0)}ms` },
+                    { label: "AI Powered", value: bloomData.metadata.llm_used ? "Yes" : "No" },
+                  ]}
+                />
+              )}
+
+              <InfoPanel
+                title="Additional Details"
+                content={`Scientific Name: ${bloomData.flower.scientific_name}\nBloom Period: ${bloomData.known_bloom_period}\nClimate: ${bloomData.climate}`}
+              />
+            </>
+          ) : (
+            <>
+              <InfoPanel
+                title={selectedFlower ? `${selectedFlower} in ${selectedRegion}` : `Exploring ${selectedRegion}`}
+                content="Unable to load real-time data. Please ensure the backend server is running."
+                stats={[
+                  { label: "Status", value: "Offline" },
+                  { label: "Server", value: "Not Connected" },
+                  { label: "Mode", value: "Placeholder" },
+                ]}
               />
             </>
           )}
