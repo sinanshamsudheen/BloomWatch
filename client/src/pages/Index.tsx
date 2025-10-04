@@ -8,11 +8,13 @@ import { Leaf } from "lucide-react";
 const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>();
   const [selectedFlower, setSelectedFlower] = useState<string>();
+  const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
 
-  const handleSearch = (region: string, flower: string) => {
+  const handleSearch = (region: string, flower: string, coordinates?: [number, number]) => {
     setSelectedRegion(region);
     setSelectedFlower(flower);
+    setSelectedCoordinates(coordinates);
     setShowResults(true);
   };
 
@@ -91,7 +93,11 @@ const Index = () => {
 
         {/* Right Panel - Map */}
         <main className="flex-1 relative">
-          <MapView region={selectedRegion} flower={selectedFlower} />
+          <MapView 
+            region={selectedRegion} 
+            flower={selectedFlower}
+            coordinates={selectedCoordinates}
+          />
         </main>
       </div>
     </div>

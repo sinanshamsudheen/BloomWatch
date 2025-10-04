@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface MapViewProps {
   region?: string;
   flower?: string;
+  coordinates?: [number, number];
 }
 
-const MapView = ({ region, flower }: MapViewProps) => {
+const MapView = ({ region, flower, coordinates }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,12 +126,16 @@ const MapView = ({ region, flower }: MapViewProps) => {
   // Update map view when region changes
   useEffect(() => {
     if (map.current && mapLoaded && region) {
-      const [lng, lat] = getRegionCoordinates(region);
+      // Use provided coordinates or fall back to lookup
+      const [lng, lat] = coordinates || getRegionCoordinates(region);
       
-      // Animate to the new location
+      // Animate to the new location with smooth globe rotation
       map.current.flyTo({
         center: [lng, lat],
-        zoom: 5,
+        zoom: 8,
+        pitch: 45,
+        bearing: 0,
+        duration: 2500,
         essential: true // This animation is considered essential with respect to accessibility
       });
 
@@ -176,7 +181,7 @@ const MapView = ({ region, flower }: MapViewProps) => {
 
       toast.success(`Zoomed to ${region}${flower ? ` for ${flower}` : ""}`);
     }
-  }, [region, flower, mapLoaded, getRegionCoordinates]);
+  }, [region, flower, coordinates, mapLoaded, getRegionCoordinates]);
 
   // Add NDVI abundance overlay when available (this would come from the backend in a real implementation)
   useEffect(() => {
@@ -190,7 +195,8 @@ const MapView = ({ region, flower }: MapViewProps) => {
         map.current.removeSource("ndvi-overlay");
       }
 
-      const [lng, lat] = getRegionCoordinates(region);
+      // Use provided coordinates or fall back to lookup
+      const [lng, lat] = coordinates || getRegionCoordinates(region);
       
       // Create a sample polygon for demonstration
       const ndviData: GeoJSON.Feature<GeoJSON.Polygon> = {
@@ -251,7 +257,7 @@ const MapView = ({ region, flower }: MapViewProps) => {
         }
       });
     }
-  }, [region, mapLoaded, getRegionCoordinates]);
+  }, [region, coordinates, mapLoaded, getRegionCoordinates]);
 
   // Function to reset map to initial globe view
   const resetView = () => {
