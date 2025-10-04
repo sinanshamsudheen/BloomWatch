@@ -42,6 +42,9 @@ const MapView = ({ region, flower }: MapViewProps) => {
         style: {
           "version": 8,
           "name": "BloomWatch Global Style",
+          "projection": {
+            "type": "globe"
+          },
           "sources": {
             "osm-raster": {
               "type": "raster",
@@ -55,12 +58,20 @@ const MapView = ({ region, flower }: MapViewProps) => {
               "maxzoom": 19
             }
           },
+          "sky": {
+            "sky-color": "#080820",
+            "sky-horizon-blend": 0.5,
+            "horizon-color": "#1a1a2e",
+            "horizon-fog-blend": 0.5,
+            "fog-color": "#0f0f23",
+            "fog-ground-blend": 0.5
+          },
           "layers": [
             {
               "id": "background",
               "type": "background",
               "paint": {
-                "background-color": "#061E3F"
+                "background-color": "#000814"
               }
             },
             {
@@ -70,15 +81,17 @@ const MapView = ({ region, flower }: MapViewProps) => {
               "minzoom": 0,
               "maxzoom": 22,
               "paint": {
-                "raster-opacity": 0.9
+                "raster-opacity": 1
               }
             }
           ]
         },
-        center: [0, 0], // starting position [lng, lat]
-        zoom: 1.5, // starting zoom
-        pitch: 65, // starting pitch
-        bearing: 0 // starting bearing
+        center: [0, 20], // starting position [lng, lat]
+        zoom: 1.2, // starting zoom for better globe view
+        pitch: 0, // pitch for globe view (0 for direct view)
+        bearing: 0, // starting bearing
+        dragRotate: true, // Enable rotation
+        touchPitch: true // Enable touch pitch
       });
 
       // Handle map load event
@@ -244,9 +257,9 @@ const MapView = ({ region, flower }: MapViewProps) => {
   const resetView = () => {
     if (map.current) {
       map.current.flyTo({
-        center: [0, 0],
-        zoom: 1.5,
-        pitch: 65,
+        center: [0, 20],
+        zoom: 1.2,
+        pitch: 0,
         bearing: 0,
         essential: true
       });
