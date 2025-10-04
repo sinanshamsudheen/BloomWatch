@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 interface SearchBarProps {
   onSearch: (region: string, flower: string, coordinates?: [number, number]) => void;
+  initialRegion?: string;
 }
 
 interface LocationSuggestion {
@@ -16,7 +17,7 @@ interface LocationSuggestion {
   name: string;
 }
 
-const SearchBar = ({ onSearch }: SearchBarProps) => {
+const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
   const [region, setRegion] = useState("");
   const [flower, setFlower] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -25,6 +26,13 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update region when initialRegion changes (from map click)
+  useEffect(() => {
+    if (initialRegion) {
+      setRegion(initialRegion);
+    }
+  }, [initialRegion]);
 
   // Close suggestions when clicking outside
   useEffect(() => {

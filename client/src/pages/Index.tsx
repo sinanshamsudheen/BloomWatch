@@ -18,6 +18,12 @@ const Index = () => {
     setShowResults(true);
   };
 
+  const handleLocationSelect = (location: string, coordinates: [number, number]) => {
+    setSelectedRegion(location);
+    setSelectedCoordinates(coordinates);
+    setShowResults(true);
+  };
+
   const handleImageUpload = (file: File) => {
     console.log("Image uploaded:", file.name);
     // Simulate classification
@@ -46,7 +52,7 @@ const Index = () => {
       </header>
 
       {/* Search Bar */}
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar onSearch={handleSearch} initialRegion={selectedRegion} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row relative">
@@ -97,6 +103,7 @@ const Index = () => {
             region={selectedRegion} 
             flower={selectedFlower}
             coordinates={selectedCoordinates}
+            onLocationSelect={handleLocationSelect}
           />
         </main>
       </div>

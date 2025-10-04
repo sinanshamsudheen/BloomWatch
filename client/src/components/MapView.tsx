@@ -8,9 +8,10 @@ interface MapViewProps {
   region?: string;
   flower?: string;
   coordinates?: [number, number];
+  onLocationSelect?: (location: string, coordinates: [number, number]) => void;
 }
 
-const MapView = ({ region, flower, coordinates }: MapViewProps) => {
+const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +106,43 @@ const MapView = ({ region, flower, coordinates }: MapViewProps) => {
 
         // Add scale control
         map.current!.addControl(new maplibregl.ScaleControl(), "bottom-left");
+      });
+
+      // Handle map clicks for location selection
+      map.current.on("click", async (e) => {
+        const { lng, lat } = e.lngLat;
+        
+        // Show loading toast
+        const loadingToast = toast.loading("Fetching location...");
+        
+        try {
+          // Reverse geocode the clicked location
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'BloomWatch/1.0'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const locationName = data.display_name;
+            
+            // Call the callback with the selected location
+            if (onLocationSelect) {
+              onLocationSelect(locationName, [lng, lat]);
+            }
+            
+            toast.success("Location selected!", { id: loadingToast });
+          } else {
+            toast.error("Could not fetch location details", { id: loadingToast });
+          }
+        } catch (error) {
+          console.error("Error reverse geocoding:", error);
+          toast.error("Failed to get location details", { id: loadingToast });
+        }
       });
 
       // Handle style load error
