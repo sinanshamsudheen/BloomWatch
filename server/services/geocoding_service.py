@@ -92,12 +92,26 @@ def get_coordinates_from_database(region_name: str, country: Optional[str] = Non
     if normalized in REGION_COORDINATES:
         return REGION_COORDINATES[normalized]
     
-    # Try partial matching
+    # Try various partial matching strategies
+    # 1. Try if region name starts with or contains a known region
     for key, coords in REGION_COORDINATES.items():
-        if normalized in key or key in normalized:
+        if normalized.startswith(key) or key.startswith(normalized) or normalized in key or key in normalized:
             return coords
     
-    # Try matching with country
+    # 2. Try common substrings and variations
+    # Remove common suffixes like "valley", "region", "province", etc.
+    common_suffixes = ['valley', 'region', 'province', 'state', 'district', 'area', 'zone']
+    for suffix in common_suffixes:
+        if normalized.endswith(suffix):
+            base_name = normalized.replace(suffix, '').strip()
+            if base_name in REGION_COORDINATES:
+                return REGION_COORDINATES[base_name]
+            # Also try partial match with the base name
+            for key, coords in REGION_COORDINATES.items():
+                if base_name in key or key in base_name:
+                    return coords
+    
+    # 3. Try matching with country
     if country:
         country_normalized = normalize_region_name(country)
         combined = f"{normalized} {country_normalized}"

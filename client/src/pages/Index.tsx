@@ -120,11 +120,11 @@ const Index = () => {
             <>
               <InfoPanel
                 title="Welcome to BloomWatch"
-                content="Explore global flower blooms using real-time satellite data. Search for any region to see abundance maps, or upload a flower image to identify species and discover their most abundant locations."
+                content="Explore global flower blooms using real-time data. Search for any region to see abundance maps, or upload a flower image to identify species and discover their most abundant locations."
                 stats={[
                   { label: "Global Coverage", value: "195 countries" },
                   { label: "Flower Species", value: "12,000+" },
-                  { label: "Data Points", value: "50M+" },
+                  // { label: "Data Points", value: "50M+" },
                 ]}
               />
               

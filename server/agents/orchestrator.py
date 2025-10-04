@@ -300,7 +300,7 @@ class BloomExplanationOrchestrator:
             "abundance_level": abundance_level,  # From search data
             "season": bloom_data.get("season", context['season']),  # Prefer search data
             "climate": climate,
-            "known_bloom_period": bloom_data.get("season", context['known_bloom_period']),  # From search data
+            "known_bloom_period": context['known_bloom_period'],  # Use context's known_bloom_period instead of duplicating season
             "notes": context.get('notes', ''),
             "explanation": explanation,
             "factors": factors,
