@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { Loader2, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState, useCallback } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface MapViewProps {
@@ -10,105 +11,279 @@ interface MapViewProps {
 
 const MapView = ({ region, flower }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(false);
-  const [zoom, setZoom] = useState(1.5);
-  const [rotation, setRotation] = useState(0);
+  const map = useRef<maplibregl.Map | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Function to get coordinates for a region (simplified for demo)
+  const getRegionCoordinates = useCallback((regionName?: string) => {
+    if (!regionName) return [0, 0]; // Default to center of globe
+    
+    // Simplified mapping - in a real app, you'd use a geocoding service
+    const regionMap: Record<string, [number, number]> = {
+      "Amazon Rainforest": [-60, -3],
+      "Sahara Desert": [13, 25],
+      "Himalayas": [81, 28],
+      "New York": [-74, 40.7],
+      "London": [-0.1, 51.5],
+      "Tokyo": [139.7, 35.7],
+      "Sydney": [151, -33.9],
+      "Mt. Fuji": [138.7, 35.4]
+    };
+    
+    return regionMap[regionName] || [0, 0];
+  }, []);
 
   useEffect(() => {
-    if (region) {
-      setLoading(true);
-      // Simulate loading
-      setTimeout(() => {
-        setLoading(false);
-        setZoom(5);
-        toast.success(`Zoomed to ${region}${flower ? ` for ${flower}` : ""}`);
-      }, 1500);
-    }
-  }, [region, flower]);
+    if (mapContainer.current && !map.current) {
+      // Initialize MapLibre GL JS with custom globe style
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: {
+          "version": 8,
+          "name": "BloomWatch Global Style",
+          "sources": {
+            "osm-raster": {
+              "type": "raster",
+              "tiles": [
+                "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              ],
+              "tileSize": 256,
+              "attribution": "© OpenStreetMap contributors",
+              "maxzoom": 19
+            }
+          },
+          "layers": [
+            {
+              "id": "background",
+              "type": "background",
+              "paint": {
+                "background-color": "#061E3F"
+              }
+            },
+            {
+              "id": "osm-tiles",
+              "type": "raster",
+              "source": "osm-raster",
+              "minzoom": 0,
+              "maxzoom": 22,
+              "paint": {
+                "raster-opacity": 0.9
+              }
+            }
+          ]
+        },
+        center: [0, 0], // starting position [lng, lat]
+        zoom: 1.5, // starting zoom
+        pitch: 65, // starting pitch
+        bearing: 0 // starting bearing
+      });
 
-  const handleZoomIn = () => setZoom(Math.min(zoom + 0.5, 10));
-  const handleZoomOut = () => setZoom(Math.max(zoom - 0.5, 1));
-  const handleReset = () => {
-    setZoom(1.5);
-    setRotation(0);
+      // Handle map load event
+      map.current.on("load", () => {
+        setLoading(false);
+        setMapLoaded(true);
+        
+        // Add navigation controls
+        map.current!.addControl(new maplibregl.NavigationControl(), "top-right");
+
+        // Add scale control
+        map.current!.addControl(new maplibregl.ScaleControl(), "bottom-left");
+      });
+
+      // Handle style load error
+      map.current.on("error", (e) => {
+        console.error("Map error:", e.error);
+        setLoading(false);
+        toast.error("Failed to load map. Please check console for details.");
+      });
+    }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []);
+
+  // Update map view when region changes
+  useEffect(() => {
+    if (map.current && mapLoaded && region) {
+      const [lng, lat] = getRegionCoordinates(region);
+      
+      // Animate to the new location
+      map.current.flyTo({
+        center: [lng, lat],
+        zoom: 5,
+        essential: true // This animation is considered essential with respect to accessibility
+      });
+
+      // Remove any existing markers
+      if (map.current.getLayer("region-marker")) {
+        map.current.removeLayer("region-marker");
+        map.current.removeSource("region-marker");
+      }
+
+      // Add a marker for the selected region
+      const markerData: GeoJSON.Feature<GeoJSON.Point> = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: [lng, lat]
+        }
+      };
+
+      map.current.addSource("region-marker", {
+        type: "geojson",
+        data: markerData
+      });
+
+      map.current.addLayer({
+        id: "region-marker",
+        type: "circle",
+        source: "region-marker",
+        paint: {
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 6,
+            10, 12
+          ],
+          "circle-color": "#F44336", // Red for the marker
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#FFFFFF",
+          "circle-opacity": 0.9
+        }
+      });
+
+      toast.success(`Zoomed to ${region}${flower ? ` for ${flower}` : ""}`);
+    }
+  }, [region, flower, mapLoaded, getRegionCoordinates]);
+
+  // Add NDVI abundance overlay when available (this would come from the backend in a real implementation)
+  useEffect(() => {
+    if (map.current && mapLoaded && region) {
+      // In a real implementation, you would fetch NDVI data from the backend
+      // and add it as a GeoJSON or raster overlay
+      
+      // For demonstration, we'll create a sample polygon around the selected region
+      if (map.current.getSource("ndvi-overlay")) {
+        map.current.removeLayer("ndvi-overlay");
+        map.current.removeSource("ndvi-overlay");
+      }
+
+      const [lng, lat] = getRegionCoordinates(region);
+      
+      // Create a sample polygon for demonstration
+      const ndviData: GeoJSON.Feature<GeoJSON.Polygon> = {
+        type: "Feature",
+        properties: {
+          abundance: 0.7 // Example abundance value
+        },
+        geometry: {
+          type: "Polygon",
+          coordinates: [[
+            [lng - 3, lat - 3],
+            [lng + 3, lat - 3], 
+            [lng + 3, lat + 3],
+            [lng - 3, lat + 3],
+            [lng - 3, lat - 3]
+          ]]
+        }
+      };
+
+      // Remove existing NDVI layer if it exists
+      if (map.current.getLayer("ndvi-overlay")) {
+        map.current.removeLayer("ndvi-overlay");
+      }
+      if (map.current.getSource("ndvi-overlay")) {
+        map.current.removeSource("ndvi-overlay");
+      }
+
+      map.current.addSource("ndvi-overlay", {
+        type: "geojson",
+        data: ndviData
+      });
+
+      map.current.addLayer({
+        id: "ndvi-overlay",
+        type: "fill",
+        source: "ndvi-overlay",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "abundance"], // This would come from real NDVI data
+            0,
+            "#374151", // Low abundance - gray
+            0.3,
+            "#10B981", // Low-medium abundance - green
+            0.6,
+            "#F59E0B", // Medium-high abundance - amber
+            1,
+            "#EF4444"  // High abundance - red
+          ],
+          "fill-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 0.2,
+            5, 0.5
+          ]
+        }
+      });
+    }
+  }, [region, mapLoaded, getRegionCoordinates]);
+
+  // Function to reset map to initial globe view
+  const resetView = () => {
+    if (map.current) {
+      map.current.flyTo({
+        center: [0, 0],
+        zoom: 1.5,
+        pitch: 65,
+        bearing: 0,
+        essential: true
+      });
+    }
   };
 
   return (
-    <div className="relative w-full h-full bg-gradient-to-b from-info/20 to-background">
+    <div className="relative w-full h-full bg-slate-900">
       {/* Map Container */}
-      <div
-        ref={mapContainer}
-        className="absolute inset-0 flex items-center justify-center overflow-hidden"
-      >
-        {/* Globe Visualization Placeholder */}
-        <div
-          className="relative rounded-full bg-gradient-to-br from-info to-primary shadow-glow transition-all duration-1000 ease-smooth"
-          style={{
-            width: `${zoom * 200}px`,
-            height: `${zoom * 200}px`,
-            transform: `rotate(${rotation}deg)`,
-          }}
-        >
-          {/* Latitude/Longitude Grid */}
-          <div className="absolute inset-0 rounded-full border-2 border-primary-foreground/20" />
-          <div className="absolute inset-0 rounded-full border border-primary-foreground/10"
-               style={{ clipPath: "inset(25% 0 25% 0)" }} />
-          <div className="absolute inset-0 rounded-full border border-primary-foreground/10"
-               style={{ clipPath: "inset(0 25% 0 25%)" }} />
-          
-          {/* Simulated Land Masses */}
-          <div className="absolute top-1/4 left-1/3 w-1/4 h-1/6 bg-primary-glow/40 rounded-full blur-sm" />
-          <div className="absolute top-1/2 left-1/4 w-1/3 h-1/5 bg-primary-glow/40 rounded-full blur-sm" />
-          <div className="absolute bottom-1/3 right-1/4 w-1/5 h-1/6 bg-primary-glow/40 rounded-full blur-sm" />
-
-          {region && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <div className="w-8 h-8 bg-accent rounded-full animate-pulse-glow" />
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-card px-3 py-1 rounded-full text-xs font-medium text-foreground border border-border shadow-elevated">
-                {region}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0 w-full h-full"
+      />
+      
       {/* Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-foreground font-medium">Loading region data...</p>
-            <p className="text-muted-foreground text-sm mt-1">Fetching NDVI abundance</p>
+            <p className="text-foreground font-medium">Initializing 3D globe...</p>
+            <p className="text-muted-foreground text-sm mt-1">Loading satellite data</p>
           </div>
         </div>
       )}
 
       {/* Map Controls */}
       <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
-        <Button
-          size="icon"
-          variant="outline"
-          className="bg-card/95 backdrop-blur-sm hover:bg-card"
-          onClick={handleZoomIn}
+        <button
+          onClick={resetView}
+          className="p-2 bg-card/95 backdrop-blur-sm hover:bg-card rounded-md border border-border shadow-soft z-20"
+          aria-label="Reset view"
         >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="outline"
-          className="bg-card/95 backdrop-blur-sm hover:bg-card"
-          onClick={handleZoomOut}
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="outline"
-          className="bg-card/95 backdrop-blur-sm hover:bg-card"
-          onClick={handleReset}
-        >
-          <Maximize2 className="h-4 w-4" />
-        </Button>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
       </div>
 
       {/* Legend */}
@@ -116,16 +291,20 @@ const MapView = ({ region, flower }: MapViewProps) => {
         <h4 className="text-sm font-semibold text-foreground mb-3">NDVI Abundance</h4>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-destructive" />
+            <div className="w-4 h-4 rounded bg-gray-500" />
             <span className="text-xs text-muted-foreground">Low (0-0.3)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-accent" />
-            <span className="text-xs text-muted-foreground">Medium (0.3-0.6)</span>
+            <div className="w-4 h-4 rounded bg-green-500" />
+            <span className="text-xs text-muted-foreground">Low-Medium (0.3-0.6)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-primary" />
-            <span className="text-xs text-muted-foreground">High (0.6-1.0)</span>
+            <div className="w-4 h-4 rounded bg-amber-500" />
+            <span className="text-xs text-muted-foreground">Medium-High (0.6-0.8)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-500" />
+            <span className="text-xs text-muted-foreground">Very High (0.8-1.0)</span>
           </div>
         </div>
       </div>

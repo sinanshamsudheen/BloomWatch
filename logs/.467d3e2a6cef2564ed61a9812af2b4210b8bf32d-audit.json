@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/zero/VSC/BloomWatch/logs/.467d3e2a6cef2564ed61a9812af2b4210b8bf32d-audit.json",
+    "files": [
+        {
+            "date": 1759560946900,
+            "name": "/home/zero/VSC/BloomWatch/logs/mcp-puppeteer-2025-10-04.log",
+            "hash": "da331e31da655948f2413fad0d057d28b3792e4a1ef8d57aefe35157d880ada8"
+        }
+    ],
+    "hashType": "sha256"
+}
