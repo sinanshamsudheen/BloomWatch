@@ -31,7 +31,6 @@ const Index = () => {
       const data = await BloomWatchAPI.getBloomExplanation({
         region,
         flower,
-        ndvi_score: 0.75, // Default, can be calculated from satellite data
         coordinates,
         use_mock_search: true, // Set to true for faster testing
       });
@@ -129,9 +128,9 @@ const Index = () => {
                 title={`${bloomData.flower.common_name} in ${bloomData.region}`}
                 content={bloomData.notes}
                 stats={[
-                  { label: "NDVI Score", value: bloomData.ndvi_score.toFixed(2) },
                   { label: "Abundance", value: bloomData.abundance_level },
                   { label: "Season", value: bloomData.season },
+                  { label: "Bloom Period", value: bloomData.known_bloom_period },
                 ]}
               />
 

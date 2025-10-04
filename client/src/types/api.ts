@@ -30,8 +30,7 @@ export interface Metadata {
 export interface BloomExplanation {
   region: string;
   flower: FlowerInfo;
-  ndvi_score: number;
-  abundance_level: "high" | "medium" | "low";
+  abundance_level: "high" | "medium" | "low" | "none";
   season: string;
   climate: string;
   known_bloom_period: string;
@@ -47,7 +46,6 @@ export interface BloomExplanation {
 export interface ExplanationRequest {
   region: string;
   flower: string;
-  ndvi_score?: number;
   coordinates?: [number, number];
   climate_data?: {
     temperature?: number;

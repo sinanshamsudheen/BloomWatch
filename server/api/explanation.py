@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class ExplanationRequest(BaseModel):
     region: str = Field(..., description="Geographic location/region")
     flower: str = Field(..., description="Flower species name")
-    ndvi_score: float = Field(default=0.7, ge=0.0, le=1.0, description="NDVI vegetation index score")
     coordinates: Optional[tuple] = Field(None, description="(longitude, latitude) coordinates")
     climate_data: Optional[Dict[str, Any]] = Field(None, description="Optional climate data")
     date: Optional[str] = Field(None, description="Optional date string")
@@ -40,7 +39,6 @@ class MetadataResponse(BaseModel):
 class ExplanationResponse(BaseModel):
     region: str
     flower: FlowerInfo
-    ndvi_score: float
     abundance_level: str
     season: str
     climate: str
@@ -79,7 +77,6 @@ async def explain_bloom_patterns(request: ExplanationRequest):
         result = await orchestrator.orchestrate(
             region=request.region,
             flower=request.flower,
-            ndvi_score=request.ndvi_score,
             coordinates=request.coordinates,
             climate_data=request.climate_data,
             date=request.date,
@@ -99,7 +96,6 @@ async def explain_bloom_patterns(request: ExplanationRequest):
 async def get_explanation(
     region: str = Query(..., description="Region to explain bloom patterns for"),
     flower: str = Query(..., description="Flower species to explain bloom patterns for"),
-    ndvi_score: float = Query(0.7, ge=0.0, le=1.0, description="NDVI score"),
     use_mock_search: bool = Query(False, description="Use mock search for testing")
 ):
     """
@@ -110,7 +106,6 @@ async def get_explanation(
     request = ExplanationRequest(
         region=region,
         flower=flower,
-        ndvi_score=ndvi_score,
         use_mock_search=use_mock_search
     )
     return await explain_bloom_patterns(request)

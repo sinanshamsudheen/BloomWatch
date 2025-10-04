@@ -61,7 +61,6 @@ class BloomExplanationOrchestrator:
         self,
         region: str,
         flower: str,
-        ndvi_score: float = 0.7,
         coordinates: Optional[tuple] = None,
         climate_data: Optional[Dict] = None,
         date: Optional[str] = None,
@@ -73,7 +72,6 @@ class BloomExplanationOrchestrator:
         Args:
             region: Geographic location
             flower: Flower species name
-            ndvi_score: NDVI vegetation index score
             coordinates: Optional (longitude, latitude) tuple
             climate_data: Optional climate data
             date: Optional date string
@@ -89,7 +87,7 @@ class BloomExplanationOrchestrator:
             # Run web search and explanation preparation concurrently
             search_task = self._run_web_search(region, flower, use_mock_search)
             context_task = self._prepare_context(
-                region, flower, ndvi_score, coordinates, climate_data, date
+                region, flower, coordinates, climate_data, date
             )
             
             # Wait for both tasks with timeout
@@ -126,12 +124,12 @@ class BloomExplanationOrchestrator:
         except asyncio.TimeoutError:
             logger.error(f"Orchestration timeout after {self.timeout}s")
             return self._build_fallback_response(
-                region, flower, ndvi_score, "Timeout", start_time
+                region, flower, "Timeout", start_time
             )
         except Exception as e:
             logger.error(f"Orchestration error: {str(e)}")
             return self._build_fallback_response(
-                region, flower, ndvi_score, str(e), start_time
+                region, flower, str(e), start_time
             )
     
     async def _run_web_search(
@@ -166,7 +164,6 @@ class BloomExplanationOrchestrator:
         self,
         region: str,
         flower: str,
-        ndvi_score: float,
         coordinates: Optional[tuple],
         climate_data: Optional[Dict],
         date: Optional[str]
@@ -175,7 +172,6 @@ class BloomExplanationOrchestrator:
         return prepare_explanation_context(
             region=region,
             flower=flower,
-            ndvi_score=ndvi_score,
             coordinates=coordinates,
             climate_data=climate_data,
             date=date
@@ -193,7 +189,6 @@ class BloomExplanationOrchestrator:
             return generate_fallback_explanation(
                 context['region'],
                 context['flower']['common_name'],
-                context['ndvi_score'],
                 context
             )
         
@@ -232,7 +227,6 @@ class BloomExplanationOrchestrator:
             return generate_fallback_explanation(
                 context['region'],
                 context['flower']['common_name'],
-                context['ndvi_score'],
                 context
             )
     
@@ -290,7 +284,6 @@ class BloomExplanationOrchestrator:
                 "common_name": flower,
                 "scientific_name": context['flower']['scientific_name']
             },
-            "ndvi_score": context['ndvi_score'],  # Keep for reference but not used in logic
             "abundance_level": abundance_level,  # From search data
             "season": bloom_data.get("season", context['season']),  # Prefer search data
             "climate": climate,
@@ -317,7 +310,6 @@ class BloomExplanationOrchestrator:
         self,
         region: str,
         flower: str,
-        ndvi_score: float,
         error: str,
         start_time: datetime
     ) -> Dict[str, Any]:
@@ -331,15 +323,16 @@ class BloomExplanationOrchestrator:
             "bloom_period": "Varies by region"
         })
         
-        from agents.explanation_agent import get_abundance_level, get_current_season
+        from agents.explanation_agent import get_current_season
         
-        abundance = get_abundance_level(ndvi_score)
+        # Default to medium abundance when data is unavailable
+        abundance = "medium"
         
-        notes = f"{'Peak blooming observed' if ndvi_score >= 0.7 else 'Active bloom period' if ndvi_score >= 0.4 else 'Limited vegetation activity'}"
+        notes = "Bloom analysis based on regional and seasonal patterns"
         
-        fallback_explanation = f"""Based on satellite vegetation data, {flower} shows {abundance} bloom activity in {region} (NDVI: {ndvi_score}). 
+        fallback_explanation = f"""Based on regional and seasonal data, {flower} typically shows bloom activity in {region} during {flower_info['bloom_period']}. 
         
-The current conditions suggest {'optimal' if ndvi_score >= 0.7 else 'moderate' if ndvi_score >= 0.4 else 'limited'} flowering patterns. Bloom timing is influenced by temperature, precipitation, day length, and local climate conditions. This species typically blooms during {flower_info['bloom_period']}.
+Bloom timing is influenced by temperature, precipitation, day length, and local climate conditions specific to this region. This species is known to adapt its flowering patterns based on environmental cues.
 
 For detailed analysis, please ensure API services are properly configured."""
         
@@ -349,7 +342,6 @@ For detailed analysis, please ensure API services are properly configured."""
                 "common_name": flower,
                 "scientific_name": flower_info["scientific"]
             },
-            "ndvi_score": ndvi_score,
             "abundance_level": abundance,
             "season": f"{get_current_season()} {datetime.now().year}",
             "climate": "Climate data not available",

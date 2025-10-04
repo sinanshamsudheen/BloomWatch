@@ -50,14 +50,12 @@ export class BloomWatchAPI {
    */
   static async getBloomExplanationSimple(
     region: string,
-    flower: string,
-    ndviScore: number = 0.7
+    flower: string
   ): Promise<BloomExplanation> {
     try {
       const params = new URLSearchParams({
         region,
         flower,
-        ndvi_score: ndviScore.toString(),
       });
 
       const response = await fetch(
@@ -99,7 +97,6 @@ export const mockBloomExplanation: BloomExplanation = {
     common_name: "Sample Flower",
     scientific_name: "Flowrus Samplus",
   },
-  ndvi_score: 0.75,
   abundance_level: "high",
   season: "Spring 2025",
   climate: "Temperature: 18°C, Precipitation: 45mm",

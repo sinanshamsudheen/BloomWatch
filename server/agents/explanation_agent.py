@@ -10,14 +10,7 @@ from langchain_openai import ChatOpenAI
 logger = logging.getLogger(__name__)
 
 
-def get_abundance_level(ndvi_score: float) -> str:
-    """Convert NDVI score to qualitative abundance level"""
-    if ndvi_score >= 0.7:
-        return "high"
-    elif ndvi_score >= 0.4:
-        return "medium"
-    else:
-        return "low"
+# Removed get_abundance_level function - abundance now based on web search data
 
 
 def get_current_season() -> str:
@@ -168,7 +161,6 @@ def check_climate_compatibility(flower: str, region: str) -> Dict[str, Any]:
 def prepare_explanation_context(
     region: str,
     flower: str,
-    ndvi_score: float = 0.7,
     coordinates: Optional[tuple] = None,
     climate_data: Optional[Dict] = None,
     date: Optional[str] = None,
@@ -193,8 +185,6 @@ def prepare_explanation_context(
             "common_name": flower,
             "scientific_name": flower_info["scientific"]
         },
-        "ndvi_score": ndvi_score,
-        "abundance_level": get_abundance_level(ndvi_score),
         "season": f"{get_current_season()} {datetime.now().year}",
         "known_bloom_period": flower_info["bloom_period"],
         "timestamp": datetime.utcnow().isoformat()
@@ -216,20 +206,13 @@ def prepare_explanation_context(
     if web_search_summary:
         context["web_research"] = web_search_summary
     
-    # Add contextual notes based on NDVI score
+    # Add contextual notes based on climate compatibility
     if compatibility["warning"]:
         context["notes"] = f"⚠️ Climate Warning: {compatibility['warning']}"
         context["climate_compatible"] = False
     else:
         context["climate_compatible"] = True
-        if ndvi_score >= 0.8:
-            context["notes"] = "Peak blooming observed, excellent vegetation health"
-        elif ndvi_score >= 0.6:
-            context["notes"] = "Active bloom period, favorable conditions"
-        elif ndvi_score >= 0.3:
-            context["notes"] = "Moderate bloom activity, typical for season"
-        else:
-            context["notes"] = "Low vegetation activity, may be off-season or stress conditions"
+        context["notes"] = "Analysis based on regional and seasonal patterns"
     
     # Add climate compatibility info
     context["compatibility"] = compatibility
@@ -285,7 +268,6 @@ Keep it factual, honest, and based solely on the provided research. 150-250 word
 async def generate_explanation(
     region: str,
     flower: str,
-    ndvi_score: float = 0.7,
     coordinates: Optional[tuple] = None,
     climate_data: Optional[Dict] = None,
     date: Optional[str] = None,
@@ -298,7 +280,6 @@ async def generate_explanation(
     Args:
         region: Geographic location name
         flower: Flower species name
-        ndvi_score: NDVI vegetation index score (0.0 - 1.0)
         coordinates: Optional (longitude, latitude) tuple
         climate_data: Optional climate information dictionary
         date: Optional date string
@@ -311,7 +292,7 @@ async def generate_explanation(
     try:
         # Prepare context
         context = prepare_explanation_context(
-            region, flower, ndvi_score, coordinates, climate_data, date, web_search_summary
+            region, flower, coordinates, climate_data, date, web_search_summary
         )
         
         # Create agent and task
@@ -327,21 +308,19 @@ async def generate_explanation(
     except Exception as e:
         logger.error(f"Error generating explanation: {str(e)}")
         # Fallback to simple explanation
-        return generate_fallback_explanation(region, flower, ndvi_score, context)
+        return generate_fallback_explanation(region, flower, context)
 
 
 def generate_fallback_explanation(
     region: str,
     flower: str,
-    ndvi_score: float,
     context: Dict[str, Any]
 ) -> str:
     """Generate a fallback explanation if agent fails"""
-    abundance = context['abundance_level']
     
-    return f"""Based on satellite NDVI analysis (score: {ndvi_score}), {flower} is currently experiencing {abundance} bloom activity in {region}. 
+    return f"""Based on regional and seasonal analysis, {flower} typically blooms in {region} during {context['known_bloom_period']}. 
 
-The vegetation index indicates {'excellent' if ndvi_score >= 0.7 else 'moderate' if ndvi_score >= 0.4 else 'limited'} photosynthetic activity, suggesting {'peak flowering conditions' if ndvi_score >= 0.7 else 'active growth with emerging blooms' if ndvi_score >= 0.4 else 'early or late season conditions'}. 
+This flower's bloom timing is primarily influenced by local environmental conditions and seasonal cues specific to the region. 
 
 Ecological factors influencing bloom patterns include:
 1. Seasonal temperature variations triggering flowering hormones
@@ -349,5 +328,6 @@ Ecological factors influencing bloom patterns include:
 3. Day length (photoperiod) signaling seasonal changes
 4. Local climate conditions specific to {region}
 5. Pollinator populations facilitating reproduction
+6. Soil composition and nutrient availability
 
-The current {context['season']} period aligns with the typical bloom window of {context['known_bloom_period']}. {context['notes']}. This species plays an important role in the local ecosystem, supporting pollinator populations and contributing to regional biodiversity."""
+The current {context['season']} period aligns with the typical bloom window for this species. {context['notes']}. This species plays an important role in the local ecosystem, supporting pollinator populations and contributing to regional biodiversity."""

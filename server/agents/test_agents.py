@@ -26,13 +26,11 @@ async def test_orchestrator_basic():
     result = await orchestrator.orchestrate(
         region="Kashmir Valley",
         flower="tulip",
-        ndvi_score=0.75,
         use_mock_search=True
     )
     
     print(f"\n✓ Region: {result['region']}")
-    print(f"✓ Flower: {result['flower']} ({result['scientific_name']})")
-    print(f"✓ NDVI Score: {result['ndvi_score']}")
+    print(f"✓ Flower: {result['flower']['common_name']} ({result['flower']['scientific_name']})")
     print(f"✓ Abundance: {result['abundance_level']}")
     print(f"✓ Season: {result['season']}")
     print(f"✓ Processing Time: {result['processing_time_ms']}ms")
@@ -82,7 +80,6 @@ async def test_orchestrator_with_api():
     result = await orchestrator.orchestrate(
         region="California",
         flower="sunflower",
-        ndvi_score=0.82,
         coordinates=(-119.4179, 36.7783),
         use_mock_search=not (serpapi_key or newsapi_key)
     )
@@ -111,21 +108,20 @@ async def test_different_flowers():
     orchestrator = get_orchestrator(timeout=10)
     
     flowers = [
-        ("rose", "Paris, France", 0.65),
-        ("cherry blossom", "Tokyo, Japan", 0.90),
-        ("lavender", "Provence, France", 0.78)
+        ("rose", "Paris, France"),
+        ("cherry blossom", "Tokyo, Japan"),
+        ("lavender", "Provence, France")
     ]
     
-    for flower, region, ndvi in flowers:
+    for flower, region in flowers:
         print(f"\n🌸 Testing: {flower.title()} in {region}")
         result = await orchestrator.orchestrate(
             region=region,
             flower=flower,
-            ndvi_score=ndvi,
             use_mock_search=True
         )
-        print(f"  ✓ Scientific Name: {result['scientific_name']}")
-        print(f"  ✓ Bloom Period: {result['bloom_period']}")
+        print(f"  ✓ Scientific Name: {result['flower']['scientific_name']}")
+        print(f"  ✓ Bloom Period: {result['known_bloom_period']}")
         print(f"  ✓ Abundance: {result['abundance_level']}")
     
     print("\n✅ Test 3 PASSED")
@@ -146,7 +142,6 @@ async def test_error_handling():
     result = await orchestrator.orchestrate(
         region="Test Region",
         flower="test flower",
-        ndvi_score=0.5,
         use_mock_search=True
     )
     
