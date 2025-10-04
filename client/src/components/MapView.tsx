@@ -89,7 +89,7 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
           ]
         },
         center: [0, 20], // starting position [lng, lat]
-        zoom: 1.2, // starting zoom for better globe view
+        zoom: 2.5, // starting zoom for better view (shows ~1000km scale)
         pitch: 0, // pitch for globe view (0 for direct view)
         bearing: 0, // starting bearing
         dragRotate: true, // Enable rotation
@@ -302,7 +302,7 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
     if (map.current) {
       map.current.flyTo({
         center: [0, 20],
-        zoom: 1.2,
+        zoom: 2.5,
         pitch: 0,
         bearing: 0,
         essential: true
