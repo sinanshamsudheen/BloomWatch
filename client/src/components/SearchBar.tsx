@@ -120,9 +120,9 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
   };
 
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
-      <div className="bg-card/95 backdrop-blur-lg rounded-xl shadow-elevated border border-border p-4">
-        <div className="flex flex-col md:flex-row gap-3">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+      <div className="bg-card/95 backdrop-blur-lg rounded-xl shadow-elevated border border-border p-3">
+        <div className="flex flex-col md:flex-row gap-2">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
             {loading && (

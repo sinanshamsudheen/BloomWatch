@@ -37,14 +37,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="relative z-50 bg-gradient-nature text-primary-foreground py-4 px-6 shadow-elevated">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary-foreground/20 rounded-lg">
-            <Leaf className="h-6 w-6" />
+      <header className="relative z-50 bg-gradient-nature text-primary-foreground py-3 px-4 shadow-elevated">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-primary-foreground/20 rounded-lg">
+            <Leaf className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">BloomWatch</h1>
-            <p className="text-sm text-primary-foreground/80">
+            <h1 className="text-xl font-bold">BloomWatch</h1>
+            <p className="text-xs text-primary-foreground/80">
               Global Flower Bloom Exploration Platform
             </p>
           </div>
@@ -55,9 +55,9 @@ const Index = () => {
       <SearchBar onSearch={handleSearch} initialRegion={selectedRegion} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row relative">
+      <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
         {/* Left Panel - Information */}
-        <aside className="w-full lg:w-[40%] bg-muted/30 p-6 overflow-y-auto space-y-6">
+        <aside className="w-full lg:w-[35%] bg-muted/30 p-4 overflow-y-auto space-y-3 max-h-[calc(100vh-80px)]">
           {!showResults ? (
             <>
               <InfoPanel

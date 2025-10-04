@@ -62,16 +62,16 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   };
 
   return (
-    <Card className="p-6 bg-card/95 backdrop-blur-sm border-border shadow-soft">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 rounded-lg bg-gradient-bloom">
-          <ImageIcon className="h-5 w-5 text-accent-foreground" />
+    <Card className="p-4 bg-card/95 backdrop-blur-sm border-border shadow-soft">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="p-1.5 rounded-lg bg-gradient-bloom">
+          <ImageIcon className="h-4 w-4 text-accent-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground">Upload Flower Image</h3>
+        <h3 className="text-sm font-semibold text-foreground">Upload Flower Image</h3>
       </div>
 
       <div
-        className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
+        className={`relative border-2 border-dashed rounded-lg p-3 transition-all ${
           dragActive
             ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/50"
@@ -86,30 +86,31 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             <img
               src={preview}
               alt="Preview"
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-24 object-cover rounded-lg"
             />
             <Button
               size="sm"
               variant="destructive"
-              className="absolute top-2 right-2"
+              className="absolute top-1 right-1 h-6 w-6 p-0"
               onClick={clearPreview}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ) : (
-          <div className="text-center">
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-            <p className="text-sm text-foreground font-medium mb-1">
+          <div className="text-center py-2">
+            <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-xs text-foreground font-medium mb-1">
               Click to upload or drag and drop
             </p>
-            <p className="text-xs text-muted-foreground mb-4">
+            <p className="text-[10px] text-muted-foreground mb-2">
               PNG, JPG, WEBP up to 10MB
             </p>
             <Button
               onClick={() => inputRef.current?.click()}
               variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
+              size="sm"
+              className="border-primary text-primary hover:bg-primary/10 h-7 text-xs"
             >
               Select Image
             </Button>
@@ -126,7 +127,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
 
       {preview && (
         <Button
-          className="w-full mt-4 bg-gradient-bloom hover:opacity-90 transition-opacity"
+          className="w-full mt-3 bg-gradient-bloom hover:opacity-90 transition-opacity h-8 text-xs"
           onClick={() => toast.success("Image classification started!")}
         >
           Classify Flower
