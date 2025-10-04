@@ -101,11 +101,11 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
         setLoading(false);
         setMapLoaded(true);
         
-        // Add navigation controls
-        map.current!.addControl(new maplibregl.NavigationControl(), "top-right");
-
-        // Add scale control
-        map.current!.addControl(new maplibregl.ScaleControl(), "bottom-left");
+        // Add scale control to bottom-right
+        map.current!.addControl(new maplibregl.ScaleControl({
+          maxWidth: 100,
+          unit: 'metric'
+        }), "bottom-right");
       });
 
       // Handle map clicks for location selection
@@ -315,7 +315,7 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
       {/* Map Container */}
       <div 
         ref={mapContainer} 
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full [&_.maplibregl-ctrl-attrib]:hidden"
       />
       
       {/* Loading Overlay */}
@@ -329,14 +329,15 @@ const MapView = ({ region, flower, coordinates, onLocationSelect }: MapViewProps
         </div>
       )}
 
-      {/* Map Controls */}
-      <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
+      {/* Reset Button - Top Right */}
+      <div className="absolute top-6 right-6 z-20">
         <button
           onClick={resetView}
-          className="p-2 bg-card/95 backdrop-blur-sm hover:bg-card rounded-md border border-border shadow-soft z-20"
-          aria-label="Reset view"
+          className="p-2.5 bg-card/95 backdrop-blur-sm hover:bg-card rounded-lg border border-border shadow-soft transition-all hover:scale-105"
+          aria-label="Reset view to globe"
+          title="Reset to globe view"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
             <path d="M3 3v5h5"/>
           </svg>
