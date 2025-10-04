@@ -3,7 +3,8 @@ import SearchBar from "@/components/SearchBar";
 import InfoPanel from "@/components/InfoPanel";
 import ImageUpload from "@/components/ImageUpload";
 import MapView from "@/components/MapView";
-import { Leaf, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Leaf, Loader2, BarChart3 } from "lucide-react";
 import { BloomWatchAPI } from "@/services/api";
 import { BloomExplanation, RegionInfo } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
@@ -197,6 +198,14 @@ Climate: ${bloomData.climate}`}
           )}
 
           <ImageUpload onUpload={handleImageUpload} />
+
+          <Button
+            onClick={() => window.location.href = '/predictions'}
+            className="w-full bg-gradient-nature hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            View Predictions
+          </Button>
         </aside>
 
         {/* Right Panel - Map */}
