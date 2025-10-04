@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 5
+names: ['cactus', 'lily', 'lotus', 'rose', 'tulip']
+
+roboflow:
+  workspace: nasa-space-app-challenge
+  project: my-first-project-nnkf4
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/nasa-space-app-challenge/my-first-project-nnkf4/dataset/2
