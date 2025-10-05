@@ -4,6 +4,7 @@ import InfoPanel from "@/components/InfoPanel";
 import ImageUpload from "@/components/ImageUpload";
 import MapView from "@/components/MapView";
 import PredictionsView from "@/components/PredictionsView";
+import ChatBot from "@/components/ChatBot";
 import { Button } from "@/components/ui/button";
 import { Leaf, Loader2, BarChart3 } from "lucide-react";
 import { BloomWatchAPI } from "@/services/api";
@@ -279,6 +280,7 @@ Climate: ${bloomData.climate}`}
           />
         </main>
       </div>
+      <ChatBot />
     </div>
   );
 };

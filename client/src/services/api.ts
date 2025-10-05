@@ -239,6 +239,46 @@ export class BloomWatchAPI {
       throw error;
     }
   }
+
+  /**
+   * Send a chat message to the backend
+   */
+  static async sendChatMessage(
+    message: string
+  ): Promise<string> {
+    try {
+      console.log(`Calling API: ${API_BASE_URL}/api/chat`);
+      console.log("Request payload:", { message });
+
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ message }),
+        mode: "cors",
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Chat response:", data);
+      return data.response;
+    } catch (error) {
+      console.error("Failed to send chat message:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Cannot connect to backend server. Please ensure it's running on port 8000.");
+      }
+      throw error;
+    }
+  }
 }
 
 // Mock data fallback for development/testing

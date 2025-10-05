@@ -145,3 +145,12 @@ export interface MonthlyPredictionResponse {
   prediction_summary: string;
   top_months: string[];
 }
+
+// Chat Message Types
+export interface ChatMessageRequest {
+  message: string;
+}
+
+export interface ChatMessageResponse {
+  response: string;
+}
