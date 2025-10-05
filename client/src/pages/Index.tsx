@@ -194,9 +194,10 @@ const Index = () => {
             <InfoPanel
               title="Loading bloom data..."
               content={
-                <div className="flex items-center justify-center gap-2 py-4">
+                <div className="flex flex-col items-center justify-center gap-2 py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-sm">AI agents are analyzing bloom patterns...</span>
+                  <span className="text-sm">Analyzing bloom patterns for {selectedFlower || 'your selected flower'} in {selectedRegion || 'your selected region'}...</span>
+                  <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
                 </div>
               }
             />

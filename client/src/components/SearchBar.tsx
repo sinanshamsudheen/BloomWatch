@@ -60,17 +60,24 @@ const SearchBar = ({ onSearch, initialRegion, initialFlower }: SearchBarProps) =
     const fetchSuggestions = async () => {
       if (region.trim().length < 3) {
         setSuggestions([]);
+        setShowSuggestions(false);
         return;
       }
 
       setLoading(true);
+      
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       try {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(region)}&limit=5&addressdetails=1`,
           {
             headers: {
-              'User-Agent': 'BloomWatch/1.0' // Nominatim requires a User-Agent
-            }
+              'User-Agent': 'BloomWatch/1.0', // Nominatim requires a User-Agent
+            },
+            signal: controller.signal // Add abort signal for timeout
           }
         );
 
@@ -78,17 +85,31 @@ const SearchBar = ({ onSearch, initialRegion, initialFlower }: SearchBarProps) =
           const data = await response.json();
           setSuggestions(data);
           setShowSuggestions(data.length > 0);
+        } else {
+          // Handle non-OK responses
+          console.error("Error fetching location suggestions:", response.status, response.statusText);
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
       } catch (error) {
-        console.error("Error fetching location suggestions:", error);
-        toast.error("Failed to fetch location suggestions");
+        if (error.name === 'AbortError') {
+          console.error("Location suggestion request timed out");
+          toast.error("Request timed out. Please try again.");
+        } else {
+          console.error("Error fetching location suggestions:", error);
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
 
     const debounceTimer = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(debounceTimer);
+    return () => {
+      clearTimeout(debounceTimer);
+    };
   }, [region]);
 
   const handleSearch = () => {
