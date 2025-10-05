@@ -46,7 +46,3 @@ logs/
 # Database
 *.db
 *.db-journal
-
-# Models
-models/*.pkl
-models/*.h5

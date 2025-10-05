@@ -6,11 +6,8 @@ import MapView from "@/components/MapView";
 import { Button } from "@/components/ui/button";
 import { Leaf, Loader2, BarChart3 } from "lucide-react";
 import { BloomWatchAPI } from "@/services/api";
-import { BloomExplanation, RegionInfo } from "@/types/api";
+import { BloomExplanation, RegionInfo, ClassificationResponse } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
-
-// Define the API base URL (same as in services/api.ts)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>();
@@ -18,40 +15,34 @@ const Index = () => {
   const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
   const [bloomData, setBloomData] = useState<BloomExplanation | null>(null);
-  const [abundanceData, setAbundanceData] = useState<import("@/types/api").AbundanceData | null>(null);
   const [topRegions, setTopRegions] = useState<RegionInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = async (region: string, flower: string, coordinates?: [number, number]) => {
+    // Set loading state immediately
+    setLoading(true);
+    setShowResults(true);
+    setBloomData(null); // Clear previous data
+    setTopRegions([]); // Clear previous regions
+    
     setSelectedRegion(region);
     setSelectedFlower(flower);
     setSelectedCoordinates(coordinates);
-    setLoading(true);
-    setShowResults(true);
 
     try {
       console.log("Fetching bloom data for:", { region, flower, coordinates });
       
-      // Fetch bloom explanation data from backend
-      const dataPromise = BloomWatchAPI.getBloomExplanation({
+      // Fetch real data from backend
+      const data = await BloomWatchAPI.getBloomExplanation({
         region,
         flower,
         coordinates,
         use_mock_search: false, // Set to false to use real data
       });
 
-      // Fetch abundance data from backend
-      const abundancePromise = BloomWatchAPI.getAbundanceData(region, flower);
-
-      // Execute both API calls concurrently
-      const [bloomData, abundanceDataResult] = await Promise.all([dataPromise, abundancePromise]);
-
-      console.log("Received bloom data:", bloomData);
-      console.log("Received abundance data:", abundanceDataResult);
-      
-      setBloomData(bloomData);
-      setAbundanceData(abundanceDataResult);
+      console.log("Received bloom data:", data);
+      setBloomData(data);
       
       // Extract country from region (simple approach - split by comma)
       const country = region.includes(',') ? region.split(',').pop()?.trim() : region;
@@ -74,11 +65,11 @@ const Index = () => {
       }
       
       toast({
-        title: "✅ Bloom and abundance data loaded",
-        description: `Found information about ${bloomData.flower.common_name} in ${region}`,
+        title: "✅ Bloom data loaded",
+        description: `Found information about ${data.flower.common_name} in ${region}`,
       });
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error("Failed to fetch bloom data:", error);
       toast({
         title: "❌ Error loading data",
         description: error instanceof Error ? error.message : "Could not connect to the server.",
@@ -86,6 +77,7 @@ const Index = () => {
       });
       setBloomData(null);
     } finally {
+      // Ensure loading is turned off after all data fetching is complete
       setLoading(false);
     }
   };
@@ -98,51 +90,28 @@ const Index = () => {
 
   const handleImageUpload = async (file: File) => {
     console.log("Image uploaded:", file.name);
-    
-    // Create a FormData object to send the file
-    const formData = new FormData();
-    formData.append('file', file);
-    
     try {
-      setLoading(true);
+      // Call the backend to classify the flower image
+      const classificationResult = await BloomWatchAPI.classifyFlowerImage(file);
+      console.log("Classification result:", classificationResult);
       
-      // Call the backend classification API
-      const response = await fetch(`${API_BASE_URL}/api/classify`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Classification result:", result);
+      // Update the flower name with the classification result
+      setSelectedFlower(classificationResult.classification);
       
-      // Extract the classification result
-      const classifiedFlower = result.classification;
+      // Show the results panel
+      setShowResults(true);
       
-      // Update the state with the classified flower
-      setSelectedFlower(classifiedFlower);
-      
-      // Show a toast notification with the classification result
       toast({
         title: "✅ Image classified successfully",
-        description: `Identified flower: ${classifiedFlower}.`,
+        description: `Identified flower: ${classificationResult.classification} (confidence: ${(classificationResult.confidence * 100).toFixed(1)}%)`,
       });
-      
-      // Optionally, we can prompt the user to select a region for this flower
-      // This could be done with a modal or by updating the UI to suggest a region search
-      
     } catch (error) {
-      console.error("Image classification failed:", error);
+      console.error("Failed to classify image:", error);
       toast({
         title: "❌ Error classifying image",
-        description: error instanceof Error ? error.message : "Classification failed",
+        description: error instanceof Error ? error.message : "Could not classify the uploaded image.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -164,7 +133,11 @@ const Index = () => {
       </header>
 
       {/* Search Bar */}
-      <SearchBar onSearch={handleSearch} initialRegion={selectedRegion} initialFlower={selectedFlower} />
+      <SearchBar 
+        onSearch={handleSearch} 
+        initialRegion={selectedRegion} 
+        initialFlower={selectedFlower} 
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
@@ -194,10 +167,9 @@ const Index = () => {
             <InfoPanel
               title="Loading bloom data..."
               content={
-                <div className="flex flex-col items-center justify-center gap-2 py-4">
+                <div className="flex items-center justify-center gap-2 py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-sm">Analyzing bloom patterns for {selectedFlower || 'your selected flower'} in {selectedRegion || 'your selected region'}...</span>
-                  <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+                  <span className="text-sm">AI agents are analyzing bloom patterns...</span>
                 </div>
               }
             />
@@ -269,7 +241,6 @@ Climate: ${bloomData.climate}`}
             flower={selectedFlower}
             coordinates={selectedCoordinates}
             topRegions={topRegions}
-            abundanceData={abundanceData}
             onLocationSelect={handleLocationSelect}
           />
         </main>

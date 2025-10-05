@@ -13,7 +13,7 @@ The frontend is the user’s gateway for exploring plant blooming activity globa
 ## Final Goals
 - Let users explore any region’s blooming potential instantly.
 - Visual overlays and summary explanations are clear and intuitive.
-- Frontend is demo-ready, responsive, and runs on Lovable with robust integration to backend APIs.
+- Frontend is demo-ready, responsive, and runs on React with robust integration to backend APIs.
 
 ## Data Flow
 1. User selects region and flower on map/input bar.
@@ -22,11 +22,11 @@ The frontend is the user’s gateway for exploring plant blooming activity globa
 4. Show explanation/context in side/info panel.
 
 ## Tech Stack
-- Lovable (prototyping)
+- React (prototyping)
 - MapLibre GL JS (free/open-source interactive map and globe)
 - JavaScript/TypeScript, GeoJSON, OpenStreetMap layers
 
 ## Instructions
-- Install all frontend dependencies as needed (Lovable setup, npm install etc).
+- Install all frontend dependencies as needed (React setup, npm install etc).
 - Configure environment for backend endpoint URLs and map API keys if needed.
 - Run client app in dev mode during hacking for rapid iteration.

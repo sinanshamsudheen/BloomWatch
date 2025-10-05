@@ -161,6 +161,44 @@ export class BloomWatchAPI {
       throw error;
     }
   }
+
+  /**
+   * Classify flower image
+   */
+  static async classifyFlowerImage(
+    file: File
+  ): Promise<import("@/types/api").ClassificationResponse> {
+    try {
+      console.log(`Calling API: ${API_BASE_URL}/api/classify`);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/api/classify`, {
+        method: "POST",
+        body: formData,
+        // Don't set Content-Type header when using FormData - the browser sets it with boundary
+      });
+
+      console.log("Classification response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Classification response data:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to classify flower image:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Cannot connect to backend server. Please ensure it's running on port 8000.");
+      }
+      throw error;
+    }
+  }
 }
 
 // Mock data fallback for development/testing

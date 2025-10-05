@@ -12,7 +12,10 @@ import cv2
 import numpy as np
 
 # Load the trained YOLO model
-MODEL_PATH = "/mnt/e/Projects/VSC/Bloomwatch/BloomWatch/model/runs/detect/yolov8_flower_model_final/weights/best.pt"
+# Get the absolute path relative to the server directory
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SERVER_DIR = os.path.dirname(SCRIPT_DIR)
+MODEL_PATH = os.path.join(SERVER_DIR, "..", "model", "runs", "detect", "yolov8_flower_model_final", "weights", "best.pt")
 model = YOLO(MODEL_PATH)
 
 # Define flower class names based on your trained model's classes

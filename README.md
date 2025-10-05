@@ -29,7 +29,7 @@ BloomWatch is an open-source, rapid-deployment Earth observation platform that l
 ## Architecture
 
 ### Frontend
-- **Platform**: Lovable (UI prototyping)
+- **Platform**: React (UI framework)
 - **Map Engine**: MapLibre GL JS (Free, closest to Mapbox in features)
 - **Features**:
   - Region selection (drawing, search, or click)
@@ -75,7 +75,7 @@ BloomWatch is an open-source, rapid-deployment Earth observation platform that l
 
 ## Tech Stack
 
-- **Frontend**: Lovable, MapLibre GL JS, basic JS/TypeScript, GeoJSON, OpenStreetMap
+- **Frontend**: React, MapLibre GL JS, TypeScript, GeoJSON, OpenStreetMap
 - **Backend**: FastAPI, Python 3.10.10, GDAL, rasterio, pandas, numpy
 - **Data**: NASA EarthData API (MODIS MOD13Q1 v061 NDVI), reference CSV/JSON
 - **AI/Explanations**: Qwen CLI, GPT (Sonnet 4.5), GitHub Copilot (coding & error handling)

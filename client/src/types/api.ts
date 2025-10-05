@@ -103,3 +103,20 @@ export interface AbundanceData {
     };
   }>;
 }
+
+// Classification Response Types
+export interface ClassificationResponse {
+  id: string;
+  filename: string;
+  timestamp: string;
+  classification: string;
+  confidence: number;
+  location?: {
+    lat: number;
+    lng: number;
+  } | null;
+  similar_species: Array<{
+    name: string;
+    confidence: number;
+  }>;
+}

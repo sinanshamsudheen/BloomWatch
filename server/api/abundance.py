@@ -18,7 +18,7 @@ class AbundanceRequest(BaseModel):
 class AbundanceResponse(BaseModel):
     region: str
     flower: str
-    ndvi_data: List[Dict[str, Any]]
+    ndvi_data: Dict[str, Any]  # GeoJSON structure
     abundance_grid: Dict[str, Any]
 
 @router.get("/abundance", response_model=AbundanceResponse)
