@@ -199,6 +199,46 @@ export class BloomWatchAPI {
       throw error;
     }
   }
+
+  /** 
+   * Get monthly bloom predictions 
+   */
+  static async getMonthlyPredictions(
+    request: import("@/types/api").MonthlyPredictionRequest
+  ): Promise<import("@/types/api").MonthlyPredictionResponse> {
+    try {
+      console.log(`Calling API: ${API_BASE_URL}/api/monthly-predictions`);
+      console.log("Request payload:", request);
+
+      const response = await fetch(`${API_BASE_URL}/api/monthly-predictions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(request),
+        mode: "cors",
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Monthly predictions response:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch monthly predictions:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Cannot connect to backend server. Please ensure it's running on port 8000.");
+      }
+      throw error;
+    }
+  }
 }
 
 // Mock data fallback for development/testing

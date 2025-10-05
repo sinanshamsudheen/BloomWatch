@@ -120,3 +120,28 @@ export interface ClassificationResponse {
     confidence: number;
   }>;
 }
+
+// Monthly Predictions Types
+export interface MonthProbability {
+  month: string;
+  probability: number;
+}
+
+export interface MonthlyPredictionRequest {
+  region: string;
+  flower: string;
+  climate_data?: {
+    temperature?: number;
+    precipitation?: number;
+    description?: string;
+  };
+}
+
+export interface MonthlyPredictionResponse {
+  region: string;
+  flower: string;
+  month_probabilities: MonthProbability[];
+  factors: { [key: string]: number };
+  prediction_summary: string;
+  top_months: string[];
+}

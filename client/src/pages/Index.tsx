@@ -3,6 +3,7 @@ import SearchBar from "@/components/SearchBar";
 import InfoPanel from "@/components/InfoPanel";
 import ImageUpload from "@/components/ImageUpload";
 import MapView from "@/components/MapView";
+import PredictionsView from "@/components/PredictionsView";
 import { Button } from "@/components/ui/button";
 import { Leaf, Loader2, BarChart3 } from "lucide-react";
 import { BloomWatchAPI } from "@/services/api";
@@ -14,6 +15,7 @@ const Index = () => {
   const [selectedFlower, setSelectedFlower] = useState<string>();
   const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(false);
   const [bloomData, setBloomData] = useState<BloomExplanation | null>(null);
   const [topRegions, setTopRegions] = useState<RegionInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,6 +123,7 @@ const Index = () => {
     setSelectedFlower(undefined);
     setSelectedCoordinates(undefined);
     setShowResults(false);
+    setShowPredictions(false);
     setBloomData(null);
     setTopRegions([]);
     setLoading(false);
@@ -164,7 +167,13 @@ const Index = () => {
       <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
         {/* Left Panel - Information */}
         <aside className="w-full lg:w-[35%] bg-muted/30 p-4 overflow-y-auto space-y-3 max-h-[calc(100vh-80px)]">
-          {!showResults ? (
+          {showPredictions ? (
+            <PredictionsView 
+              flower={selectedFlower || ""} 
+              region={selectedRegion || ""} 
+              onBack={() => setShowPredictions(false)} 
+            />
+          ) : !showResults ? (
             <>
               <InfoPanel
                 title="Welcome to BloomWatch"
@@ -244,15 +253,19 @@ Climate: ${bloomData.climate}`}
             </>
           )}
 
-          <ImageUpload onUpload={handleImageUpload} />
+          {!showPredictions && (
+            <>
+              <ImageUpload onUpload={handleImageUpload} />
 
-          <Button
-            onClick={() => window.location.href = '/predictions'}
-            className="w-full bg-gradient-nature hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            View Predictions
-          </Button>
+              <Button
+                onClick={() => setShowPredictions(true)}
+                className="w-full bg-gradient-nature hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Predictions
+              </Button>
+            </>
+          )}
         </aside>
 
         {/* Right Panel - Map */}

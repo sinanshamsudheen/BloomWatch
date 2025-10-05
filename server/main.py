@@ -11,6 +11,7 @@ from api.abundance import router as abundance_router
 from api.explanation import router as explanation_router
 from api.classify import router as classify_router
 from api.top_regions import router as top_regions_router
+from api.monthly_predictions import router as monthly_predictions_router
 
 # Import configuration
 from config import settings
@@ -46,6 +47,7 @@ app.include_router(abundance_router, prefix="/api", tags=["abundance"])
 app.include_router(explanation_router, prefix="/api", tags=["explanation"])
 app.include_router(classify_router, prefix="/api", tags=["classify"])
 app.include_router(top_regions_router, prefix="/api", tags=["top-regions"])
+app.include_router(monthly_predictions_router, prefix="/api", tags=["monthly-predictions"])
 
 # Root endpoint
 @app.get("/")
