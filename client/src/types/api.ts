@@ -83,3 +83,23 @@ export interface TopRegionsResponse {
   ai_summary?: string;
   error?: string;
 }
+
+// Abundance Data Types
+export interface AbundancePoint {
+  coordinates: [number, number]; // [longitude, latitude]
+  value: number; // 0 to 1 representing abundance level
+}
+
+export interface AbundanceData {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: {
+      abundance: number; // 0 to 1 representing abundance level
+    };
+    geometry: {
+      type: "Polygon" | "MultiPolygon";
+      coordinates: any[]; // GeoJSON coordinates
+    };
+  }>;
+}

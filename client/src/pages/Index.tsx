@@ -9,12 +9,16 @@ import { BloomWatchAPI } from "@/services/api";
 import { BloomExplanation, RegionInfo } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 
+// Define the API base URL (same as in services/api.ts)
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 const Index = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>();
   const [selectedFlower, setSelectedFlower] = useState<string>();
   const [selectedCoordinates, setSelectedCoordinates] = useState<[number, number]>();
   const [showResults, setShowResults] = useState(false);
   const [bloomData, setBloomData] = useState<BloomExplanation | null>(null);
+  const [abundanceData, setAbundanceData] = useState<import("@/types/api").AbundanceData | null>(null);
   const [topRegions, setTopRegions] = useState<RegionInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -29,16 +33,25 @@ const Index = () => {
     try {
       console.log("Fetching bloom data for:", { region, flower, coordinates });
       
-      // Fetch real data from backend
-      const data = await BloomWatchAPI.getBloomExplanation({
+      // Fetch bloom explanation data from backend
+      const dataPromise = BloomWatchAPI.getBloomExplanation({
         region,
         flower,
         coordinates,
         use_mock_search: false, // Set to false to use real data
       });
 
-      console.log("Received bloom data:", data);
-      setBloomData(data);
+      // Fetch abundance data from backend
+      const abundancePromise = BloomWatchAPI.getAbundanceData(region, flower);
+
+      // Execute both API calls concurrently
+      const [bloomData, abundanceDataResult] = await Promise.all([dataPromise, abundancePromise]);
+
+      console.log("Received bloom data:", bloomData);
+      console.log("Received abundance data:", abundanceDataResult);
+      
+      setBloomData(bloomData);
+      setAbundanceData(abundanceDataResult);
       
       // Extract country from region (simple approach - split by comma)
       const country = region.includes(',') ? region.split(',').pop()?.trim() : region;
@@ -61,11 +74,11 @@ const Index = () => {
       }
       
       toast({
-        title: "✅ Bloom data loaded",
-        description: `Found information about ${data.flower.common_name} in ${region}`,
+        title: "✅ Bloom and abundance data loaded",
+        description: `Found information about ${bloomData.flower.common_name} in ${region}`,
       });
     } catch (error) {
-      console.error("Failed to fetch bloom data:", error);
+      console.error("Failed to fetch data:", error);
       toast({
         title: "❌ Error loading data",
         description: error instanceof Error ? error.message : "Could not connect to the server.",
@@ -83,14 +96,54 @@ const Index = () => {
     setShowResults(true);
   };
 
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = async (file: File) => {
     console.log("Image uploaded:", file.name);
-    // Simulate classification
-    setTimeout(() => {
-      setSelectedRegion("Amazon Rainforest");
-      setSelectedFlower("Passion Flower");
-      setShowResults(true);
-    }, 2000);
+    
+    // Create a FormData object to send the file
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      setLoading(true);
+      
+      // Call the backend classification API
+      const response = await fetch(`${API_BASE_URL}/api/classify`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Classification result:", result);
+      
+      // Extract the classification result
+      const classifiedFlower = result.classification;
+      
+      // Update the state with the classified flower
+      setSelectedFlower(classifiedFlower);
+      
+      // Show a toast notification with the classification result
+      toast({
+        title: "✅ Image classified successfully",
+        description: `Identified flower: ${classifiedFlower}.`,
+      });
+      
+      // Optionally, we can prompt the user to select a region for this flower
+      // This could be done with a modal or by updating the UI to suggest a region search
+      
+    } catch (error) {
+      console.error("Image classification failed:", error);
+      toast({
+        title: "❌ Error classifying image",
+        description: error instanceof Error ? error.message : "Classification failed",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,7 +164,7 @@ const Index = () => {
       </header>
 
       {/* Search Bar */}
-      <SearchBar onSearch={handleSearch} initialRegion={selectedRegion} />
+      <SearchBar onSearch={handleSearch} initialRegion={selectedRegion} initialFlower={selectedFlower} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
@@ -215,6 +268,7 @@ Climate: ${bloomData.climate}`}
             flower={selectedFlower}
             coordinates={selectedCoordinates}
             topRegions={topRegions}
+            abundanceData={abundanceData}
             onLocationSelect={handleLocationSelect}
           />
         </main>

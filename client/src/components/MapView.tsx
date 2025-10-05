@@ -10,10 +10,11 @@ interface MapViewProps {
   flower?: string;
   coordinates?: [number, number];
   topRegions?: RegionInfo[];
+  abundanceData?: import("@/types/api").AbundanceData;
   onLocationSelect?: (location: string, coordinates: [number, number]) => void;
 }
 
-const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: MapViewProps) => {
+const MapView = ({ region, flower, coordinates, topRegions, abundanceData, onLocationSelect }: MapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,39 +197,9 @@ const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: 
     }
   }, [region, flower, coordinates, mapLoaded, getRegionCoordinates, getZoomLevel]);
 
-  // Add NDVI abundance overlay when available (this would come from the backend in a real implementation)
+  // Add NDVI abundance overlay when available
   useEffect(() => {
     if (map.current && mapLoaded && region) {
-      // In a real implementation, you would fetch NDVI data from the backend
-      // and add it as a GeoJSON or raster overlay
-      
-      // For demonstration, we'll create a sample polygon around the selected region
-      if (map.current.getSource("ndvi-overlay")) {
-        map.current.removeLayer("ndvi-overlay");
-        map.current.removeSource("ndvi-overlay");
-      }
-
-      // Use provided coordinates or fall back to lookup
-      const [lng, lat] = coordinates || getRegionCoordinates(region);
-      
-      // Create a sample polygon for demonstration
-      const ndviData: GeoJSON.Feature<GeoJSON.Polygon> = {
-        type: "Feature",
-        properties: {
-          abundance: 0.7 // Example abundance value
-        },
-        geometry: {
-          type: "Polygon",
-          coordinates: [[
-            [lng - 3, lat - 3],
-            [lng + 3, lat - 3], 
-            [lng + 3, lat + 3],
-            [lng - 3, lat + 3],
-            [lng - 3, lat - 3]
-          ]]
-        }
-      };
-
       // Remove existing NDVI layer if it exists
       if (map.current.getLayer("ndvi-overlay")) {
         map.current.removeLayer("ndvi-overlay");
@@ -237,40 +208,127 @@ const MapView = ({ region, flower, coordinates, topRegions, onLocationSelect }: 
         map.current.removeSource("ndvi-overlay");
       }
 
-      map.current.addSource("ndvi-overlay", {
-        type: "geojson",
-        data: ndviData
-      });
+      // If abundance data is provided from backend, use it
+      if (abundanceData) {
+        // Use real abundance data from backend
+        map.current.addSource("ndvi-overlay", {
+          type: "geojson",
+          data: abundanceData
+        });
 
-      map.current.addLayer({
-        id: "ndvi-overlay",
-        type: "fill",
-        source: "ndvi-overlay",
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "abundance"], // This would come from real NDVI data
-            0,
-            "#374151", // Low abundance - gray
-            0.3,
-            "#10B981", // Low-medium abundance - green
-            0.6,
-            "#F59E0B", // Medium-high abundance - amber
-            1,
-            "#EF4444"  // High abundance - red
-          ],
-          "fill-opacity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 0.2,
-            5, 0.5
-          ]
+        map.current.addLayer({
+          id: "ndvi-overlay",
+          type: "fill",
+          source: "ndvi-overlay",
+          paint: {
+            "fill-color": [
+              "interpolate",
+              ["linear"],
+              ["get", "abundance"], // This comes from real NDVI data
+              0,
+              "#374151", // Low abundance - gray
+              0.3,
+              "#10B981", // Low-medium abundance - green
+              0.6,
+              "#F59E0B", // Medium-high abundance - amber
+              1,
+              "#EF4444"  // High abundance - red
+            ],
+            "fill-opacity": 0.6
+          }
+        });
+      } else {
+        // For demonstration, create a sample polygon around the selected region
+        // Use provided coordinates or fall back to lookup
+        const [lng, lat] = coordinates || getRegionCoordinates(region);
+        
+        // Create a sample polygon for demonstration - make it more region-specific based on region name
+        let coordinatesPolygon;
+        if (region && region.toLowerCase().includes('amazon')) {
+          // Special shape for Amazon rainforest
+          coordinatesPolygon = [
+            [lng - 5, lat - 2],
+            [lng + 2, lat - 4], 
+            [lng + 7, lat],
+            [lng + 2, lat + 4],
+            [lng - 5, lat + 2],
+            [lng - 5, lat - 2]
+          ];
+        } else if (region && region.toLowerCase().includes('himalaya')) {
+          // Special shape for Himalayan region
+          coordinatesPolygon = [
+            [lng - 4, lat - 2],
+            [lng + 1, lat - 3], 
+            [lng + 5, lat - 1],
+            [lng + 3, lat + 2],
+            [lng - 2, lat + 3],
+            [lng - 4, lat - 2]
+          ];
+        } else if (region && region.toLowerCase().includes('sahara')) {
+          // Special shape for Sahara desert
+          coordinatesPolygon = [
+            [lng - 6, lat - 3],
+            [lng + 4, lat - 5], 
+            [lng + 8, lat + 1],
+            [lng + 2, lat + 4],
+            [lng - 6, lat + 2],
+            [lng - 6, lat - 3]
+          ];
+        } else {
+          // Default shape for other regions
+          coordinatesPolygon = [
+            [lng - 3, lat - 3],
+            [lng + 3, lat - 3], 
+            [lng + 3, lat + 3],
+            [lng - 3, lat + 3],
+            [lng - 3, lat - 3]
+          ];
         }
-      });
+        
+        // Create a sample polygon for demonstration
+        const ndviData: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: [{
+            type: "Feature",
+            properties: {
+              abundance: 0.7 // Example abundance value
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [coordinatesPolygon]
+            }
+          }]
+        };
+
+        map.current.addSource("ndvi-overlay", {
+          type: "geojson",
+          data: ndviData
+        });
+
+        map.current.addLayer({
+          id: "ndvi-overlay",
+          type: "fill",
+          source: "ndvi-overlay",
+          paint: {
+            "fill-color": [
+              "interpolate",
+              ["linear"],
+              ["get", "abundance"], // This would come from real NDVI data
+              0,
+              "#374151", // Low abundance - gray
+              0.3,
+              "#10B981", // Low-medium abundance - green
+              0.6,
+              "#F59E0B", // Medium-high abundance - amber
+              1,
+              "#EF4444"  // High abundance - red
+            ],
+            "fill-opacity": 0.6
+          }
+        });
+      }
     }
-  }, [region, coordinates, mapLoaded, getRegionCoordinates]);
+  }, [region, coordinates, mapLoaded, getRegionCoordinates, abundanceData]);
 
   // Highlight top regions with markers
   useEffect(() => {

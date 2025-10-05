@@ -7,6 +7,7 @@ import { toast } from "sonner";
 interface SearchBarProps {
   onSearch: (region: string, flower: string, coordinates?: [number, number]) => void;
   initialRegion?: string;
+  initialFlower?: string;
 }
 
 interface LocationSuggestion {
@@ -17,7 +18,7 @@ interface LocationSuggestion {
   name: string;
 }
 
-const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
+const SearchBar = ({ onSearch, initialRegion, initialFlower }: SearchBarProps) => {
   const [region, setRegion] = useState("");
   const [flower, setFlower] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -33,6 +34,13 @@ const SearchBar = ({ onSearch, initialRegion }: SearchBarProps) => {
       setRegion(initialRegion);
     }
   }, [initialRegion]);
+
+  // Update flower when initialFlower changes (from image classification)
+  useEffect(() => {
+    if (initialFlower) {
+      setFlower(initialFlower);
+    }
+  }, [initialFlower]);
 
   // Close suggestions when clicking outside
   useEffect(() => {

@@ -125,6 +125,42 @@ export class BloomWatchAPI {
       throw error;
     }
   }
+
+  /**
+   * Fetch abundance data for a region and flower
+   */
+  static async getAbundanceData(
+    region: string,
+    flower: string
+  ): Promise<import("@/types/api").AbundanceData> {
+    try {
+      const params = new URLSearchParams({
+        region,
+        flower,
+      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/abundance?${params}`,
+        {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Abundance data response:", data);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch abundance data:", error);
+      throw error;
+    }
+  }
 }
 
 // Mock data fallback for development/testing
