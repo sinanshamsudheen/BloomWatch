@@ -242,7 +242,7 @@ const SearchBar = ({ onSearch, onReset, initialRegion, initialFlower }: SearchBa
           
           <Button
             onClick={handleReset}
-            className="bg-gradient-reset hover:opacity-90 transition-opacity"
+            className="bg-green-500 hover:bg-green-600 transition-colors text-white font-medium"
             variant="outline"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
