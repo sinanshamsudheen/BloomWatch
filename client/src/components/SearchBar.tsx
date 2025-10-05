@@ -1,4 +1,4 @@
-import { Search, Flower, MapPin, Loader2 } from "lucide-react";
+import { Search, Flower, MapPin, RotateCcw, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 interface SearchBarProps {
   onSearch: (region: string, flower: string, coordinates?: [number, number]) => void;
+  onReset: () => void;
   initialRegion?: string;
   initialFlower?: string;
 }
@@ -18,7 +19,7 @@ interface LocationSuggestion {
   name: string;
 }
 
-const SearchBar = ({ onSearch, initialRegion, initialFlower }: SearchBarProps) => {
+const SearchBar = ({ onSearch, onReset, initialRegion, initialFlower }: SearchBarProps) => {
   const [region, setRegion] = useState("");
   const [flower, setFlower] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -228,12 +229,12 @@ const SearchBar = ({ onSearch, initialRegion, initialFlower }: SearchBarProps) =
           </div>
           
           <Button
-            onClick={handleSearch}
-            className="bg-gradient-nature hover:opacity-90 transition-opacity"
-            disabled={!region.trim() || !flower.trim()}
+            onClick={onReset}
+            className="bg-gradient-reset hover:opacity-90 transition-opacity"
+            variant="outline"
           >
-            <Search className="h-4 w-4 mr-2" />
-            Explore
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset
           </Button>
         </div>
       </div>

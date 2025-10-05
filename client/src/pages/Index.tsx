@@ -115,6 +115,23 @@ const Index = () => {
     }
   };
 
+  const handleReset = () => {
+    // Reset all state values
+    setSelectedRegion(undefined);
+    setSelectedFlower(undefined);
+    setSelectedCoordinates(undefined);
+    setShowResults(false);
+    setBloomData(null);
+    setTopRegions([]);
+    setLoading(false);
+    
+    // Show a confirmation toast
+    toast({
+      title: "✅ Reset successful",
+      description: "All predictions and changes have been cleared. Ready for a new search!",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -135,6 +152,7 @@ const Index = () => {
       {/* Search Bar */}
       <SearchBar 
         onSearch={handleSearch} 
+        onReset={handleReset}
         initialRegion={selectedRegion} 
         initialFlower={selectedFlower} 
       />

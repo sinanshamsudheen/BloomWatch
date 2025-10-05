@@ -52,6 +52,7 @@ All colors MUST be HSL.
     --gradient-sky: linear-gradient(180deg, hsl(200 75% 55%), hsl(200 65% 45%));
     --gradient-bloom: linear-gradient(135deg, hsl(320 60% 65%), hsl(280 55% 60%));
     --gradient-earth: linear-gradient(180deg, hsl(30 35% 85%), hsl(30 30% 75%));
+    --gradient-reset: linear-gradient(180deg, hsl(200 75% 55%), hsl(320 60% 65%));
     
     /* Shadows */
     --shadow-soft: 0 4px 12px hsla(150, 45%, 35%, 0.1);
@@ -114,5 +115,27 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-nature {
+    background-image: var(--gradient-nature);
+  }
+  
+  .bg-gradient-sky {
+    background-image: var(--gradient-sky);
+  }
+  
+  .bg-gradient-bloom {
+    background-image: var(--gradient-bloom);
+  }
+  
+  .bg-gradient-earth {
+    background-image: var(--gradient-earth);
+  }
+  
+  .bg-gradient-reset {
+    background-image: var(--gradient-reset);
   }
 }
