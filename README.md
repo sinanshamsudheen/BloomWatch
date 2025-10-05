@@ -1,117 +1,196 @@
-# BloomWatch PRD – Hackathon Edition
+# BloomWatch - Global Flower Bloom Exploration Platform
 
 ## Overview
-BloomWatch is an open-source, rapid-deployment Earth observation platform that leverages NASA satellite data and free mapping tools to monitor, visualize, and explain global plant blooming events. Designed for hackathon-scale delivery, it delivers interactive regional abundance mapping, ecological explanations, and scalable architecture powered entirely by free APIs and open data.
+BloomWatch is an open-source, rapid-deployment Earth observation platform that leverages NASA satellite data and AI agents to monitor, visualize, and explain global plant blooming events. The platform features an interactive 3D globe interface with real-time bloom data, AI-generated ecological explanations, and flower identification from images.
 
 ---
 
 ## Objectives
-- **Visualize NDVI-based abundance grids for user-selected regions and flowers**
-- **Offer interactivity for region selection on a globe/map using free tools**
-- **Fetch and preprocess MODIS NDVI data via NASA's EarthData API**
-- **Generate actionable bloom explanations with AI, linking ecological context**
-- **Build a demo-ready MVP within 24 hours**
+- **Visualize bloom abundance for user-selected regions and flowers**
+- **Provide interactive globe/map interface with region selection tools**
+- **Generate AI-powered bloom explanations with real-time web research**
+- **Enable flower identification from uploaded images**
+- **Show top regions for specific flowers**
 
 ---
 
 ## Key Features
 
-- Interactive map/globe for global and regional selection (MapLibre GL JS)
-- Color-mapped overlay showing vegetation abundance (NDVI proxies blooming)
-- Region and flower name input workflow (search/autocomplete)
-- Data-driven abundance estimation with instant results
-- GPT/AI-powered explanations about blooming phenomena for selected region
-- Responsive frontend and robust FastAPI backend
-- All components built using free/open-source or public APIs/libraries
+- **Interactive 3D Globe Visualization**: Using MapLibre GL JS with a beautiful globe projection
+- **Region Search with Autocomplete**: Real-time location suggestions via OpenStreetMap Nominatim API
+- **Flower Identification**: AI-powered flower recognition from uploaded images
+- **AI-Powered Bloom Explanations**: CrewAI agents with OpenAI integration to generate detailed ecological explanations
+- **Web Research Integration**: Real-time data from SerpAPI and NewsAPI for current bloom conditions
+- **Top Regions Visualization**: Highlighting most popular locations for specific flowers
+- **Monthly Bloom Predictions**: Seasonal bloom forecasts based on historical patterns
+- **Chatbot Assistance**: AI-powered chat for bloom-related queries
+- **Responsive Design**: Optimized for desktop and mobile experiences
+- **Abundance Visualization**: Color-coded overlays showing bloom intensity
 
 ---
 
 ## Architecture
 
 ### Frontend
-- **Platform**: React (UI framework)
-- **Map Engine**: MapLibre GL JS (Free, closest to Mapbox in features)
+- **Platform**: React 18 with TypeScript
+- **UI Framework**: Shadcn/ui components with Tailwind CSS
+- **Map Engine**: MapLibre GL JS with 3D globe projection
+- **State Management**: React Query for server state, React hooks for local state
+- **Build Tool**: Vite
 - **Features**:
-  - Region selection (drawing, search, or click)
-  - Flower name/species selector
-  - NDVI abundance overlay (GeoJSON or raster tiles)
-  - Context panel for ecological explanations
-  - Legend, error messages, progress bars
-  - Responsive layout
+  - Region search with autocomplete
+  - Flower name input with suggestions
+  - 3D globe visualization with abundance overlays
+  - Context panel for AI-generated explanations
+  - Image upload for flower classification
+  - Top regions visualization
+  - Responsive split-screen layout
 
-### Backend/API
-- **Framework**: FastAPI (Python 3.10.10)
-- **Data Fetching**: NASA EarthData API (MODIS MOD13Q1 v061 for NDVI)
-- **Processing**: GDAL, rasterio, pandas, numpy (GeoTIFF/HDF to array, aggregation, bounding box filtering)
+### Backend
+- **Framework**: FastAPI (Python 3.10+)
+- **AI Integration**: CrewAI for agentic workflows, OpenAI for explanations
+- **APIs**: SerpAPI and NewsAPI for real-time web research
 - **Endpoints**:
-  - `/abundance` – inputs: region + flower → outputs: abundance grid (GeoJSON)
-  - `/explanation` – inputs: region + flower → outputs: short bloom summary
-- **Error/Empty State Handling**
-- **Security**: Bearer token for authenticated NASA API access
+  - `/api/explain` – Bloom explanations with web research (POST/GET)
+  - `/api/abundance` – NDVI abundance data for region and flower
+  - `/api/classify` – Flower image classification
+  - `/api/top-regions` – Top regions for a specific flower in a country
+  - `/api/monthly-predictions` – Seasonal bloom forecasts
+  - `/api/chat` – AI-powered chat functionality
+- **Security**: Environment-based API key configuration
 
-### Model/Classification
-- **NDVI-based estimation logic**: Maps NDVI ranges to vegetation abundance (proxy for bloom)
-- **Optional Flower/Greenery Detection**: YOLO/FastAI model, MVP fallback to heuristic or static mapping
-- **Reference Data**: Static CSV/JSON linking flowers, regions, habitats, bloom periods for explanations
+### AI/Agents Architecture
+- **Master Orchestrator**: Coordinates all AI agents and manages workflow
+- **Explanation Agent**: Generates botanical bloom explanations using LLMs
+- **Web Search Agent**: Retrieves real-time data from external sources
+- **Concurrent Processing**: Agents run in parallel for faster responses
+- **Fallback Mechanisms**: Graceful degradation when APIs are unavailable
 
-### Mapping & Visualization
-- **Base Map Data**: OpenStreetMap (for region context, via MapLibre)
-- **Overlay Data**: All abundance data returned as color-mapped GeoJSON
-- **User Experience**: Rich interactivity, real-time feedback
+### Visualization
+- **Base Map**: OpenStreetMap tiles with custom globe styling
+- **Abundance Overlay**: Color-coded GeoJSON polygons based on bloom intensity
+- **Top Regions Markers**: Ranked visual indicators with popup information
+- **Interactive Controls**: Zoom, rotation, and reset functionality
+- **Legend Display**: Clear mapping of colors to bloom intensity levels
 
 ---
 
 ## Workflow/Data Flow
 
-1. **User selects region and flower**
-2. **Frontend requests `/abundance` from backend with parameters**
-3. **Backend fetches NDVI imagery from MODIS MOD13Q1 via NASA API (Bearer Token), preprocesses to region boundaries**
-4. **NDVI processed into abundance estimation grid or GeoJSON**
-5. **Backend serves mapped data to frontend, which overlays colored NDVI abundance**
-6. **Optional:** Frontend requests `/explanation` endpoint for ecological summary, generated via GPT/AI model
-7. **User explores map, abundance, and explanations**
+1. **User selects region and flower** via the search interface
+2. **Frontend requests `/api/explain` with parameters**
+3. **Backend orchestrator runs explanation agent and web search agent in parallel**
+4. **Web search agent queries SerpAPI and NewsAPI for current bloom data**
+5. **Explanation agent uses OpenAI to generate ecological explanations**
+6. **Backend combines all data sources into a comprehensive response**
+7. **Frontend displays results in the info panel and updates the map visualization**
+8. **Optional**: User uploads flower image to `/api/classify` for identification
+9. **Optional**: Backend determines top regions for the identified flower and displays them on the map
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: React, MapLibre GL JS, TypeScript, GeoJSON, OpenStreetMap
-- **Backend**: FastAPI, Python 3.10.10, GDAL, rasterio, pandas, numpy
-- **Data**: NASA EarthData API (MODIS MOD13Q1 v061 NDVI), reference CSV/JSON
-- **AI/Explanations**: Qwen CLI, GPT (Sonnet 4.5), GitHub Copilot (coding & error handling)
-- **Model**: Custom classifier and NDVI abundance heuristics (optional)
-- **VCS & Deployment**: GitHub
-- **Utilities**: Requirements.txt/Poetry, basic REST API clients
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **UI Components**: Shadcn/ui with Radix UI primitives
+- **Styling**: Tailwind CSS with custom design tokens
+- **Map**: MapLibre GL JS with 3D globe projection
+- **State Management**: React Query, React Hook Form
+- **Build Tool**: Vite
+- **Icons**: Lucide React
 
-_All platform, datasets, and core tech stack components are free/open source or public datasets._
+### Backend
+- **Framework**: FastAPI (Python 3.10+)
+- **AI/Agents**: CrewAI, LangChain, OpenAI
+- **APIs**: SerpAPI, NewsAPI
+- **HTTP Client**: Requests
+- **Data Processing**: NumPy
+- **Geospatial**: GeoJSON for data exchange
 
----
-
-## Critical Hackathon Priorities
-
-1. MapLibre GL-based interactive NDVI map + region/flower selection UI (MVP)
-2. MODIS NDVI backend data pipeline via NASA EarthData API
-3. Abundance estimation and frontend overlay workflow
-4. Ecological explanation panel (AI-driven or static)
-5. End-to-end demo robustness, error handling, clean UX
-
-_Optional: AI-powered flower image classification, advanced GPT-based storytelling, multi-region comparison, deeper statistical analysis._
+### Visualization & UI
+- **Map Engine**: MapLibre GL JS (free alternative to Mapbox)
+- **UI Framework**: Radix UI primitives for accessibility
+- **Styling**: Tailwind CSS with custom theme
+- **Icons**: Lucide React
 
 ---
 
 ## Usage Scenarios
 
-- Scientist tracking phenology shifts globally
-- Farmer identifying optimal crop bloom windows
-- Conservationist locating valuable flowering hotspots
-- Public user exploring bloom trends and ecological stories
+- **Scientists** tracking phenology shifts globally
+- **Farmers** identifying optimal crop bloom windows
+- **Conservationists** locating valuable flowering hotspots
+- **Tourists** discovering when and where specific flowers bloom
+- **Botanists** exploring bloom patterns and ecological relationships
+- **General public** learning about plant phenology
 
 ---
 
-## Scalability & Next Steps
+## Current Status & Future Enhancements
 
-Post-hackathon, expand regional detail (Landsat or AVIRIS), improve detection models, add mobile support, connect with conservation/crop management systems, and enable real-time data pipelines.
+### Currently Implemented
+- ✅ Interactive 3D globe interface with custom styling
+- ✅ Region search with autocomplete via Nominatim API
+- ✅ AI-powered bloom explanations using CrewAI agents
+- ✅ Web research integration for real-time data
+- ✅ Image upload and flower classification
+- ✅ Top regions visualization with ranked markers
+- ✅ Monthly bloom predictions
+- ✅ Chatbot functionality
+- ✅ Abundance visualization overlay
+
+### Planned Enhancements
+- 🔲 Real NASA EarthData API integration (currently using mock data)
+- 🔲 Advanced flower detection using computer vision models
+- 🔲 Historical bloom pattern analysis
+- 🔲 Multi-region comparison features
+- 🔲 Mobile app development
+- 🔲 Offline capability for field work
+- 🔲 Integration with weather forecasting services
 
 ---
 
-By structuring BloomWatch in this way, you maximize impact, keep all development cost-free, and lay foundations for rapid scaling and future innovation.
+## Running the Application
+
+### Prerequisites
+- Node.js (v18+) and Bun for the frontend
+- Python 3.10+ for the backend
+- API keys for OpenAI, SerpAPI, and NewsAPI (optional, for full functionality)
+
+### Frontend Setup
+1. Navigate to the client directory: `cd client`
+2. Install dependencies: `bun install`
+3. Create `.env` file with API configuration:
+   ```
+   VITE_API_URL=http://localhost:8000
+   ```
+4. Start the development server: `bun run dev`
+
+### Backend Setup
+1. Navigate to the server directory: `cd server`
+2. Create and activate a virtual environment:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies: `pip install -r requirements.txt`
+4. Create a `.env` file with API keys:
+   ```
+   OPENAI_API_KEY=your_openai_key
+   SERPAPI_API_KEY=your_serpapi_key
+   NEWSAPI_API_KEY=your_newsapi_key
+   ```
+5. Start the server: `python main.py` or `uvicorn main:app --reload`
+
+### API Endpoints
+- `POST /api/explain` - Get bloom explanation with web research
+- `GET /api/abundance` - Get abundance data for region and flower
+- `POST /api/classify` - Upload and classify flower image
+- `POST /api/top-regions` - Get top regions for a flower in a country
+- `POST /api/monthly-predictions` - Get seasonal bloom forecasts
+- `POST /api/chat` - Send message to bloom expert chatbot
+
+---
+
+By leveraging AI agents, real-time web research, and interactive visualization, BloomWatch provides a comprehensive platform for understanding global flower bloom patterns.
