@@ -125,6 +125,9 @@ const Index = () => {
     setTopRegions([]);
     setLoading(false);
     
+    // Reset the map to default position
+    window.dispatchEvent(new CustomEvent('resetMap'));
+    
     // Show a confirmation toast
     toast({
       title: "✅ Reset successful",

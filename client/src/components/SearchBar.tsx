@@ -140,6 +140,18 @@ const SearchBar = ({ onSearch, onReset, initialRegion, initialFlower }: SearchBa
     onSearch(suggestion.display_name, flower, coordinates);
   };
 
+  const handleReset = () => {
+    // Clear local state
+    setRegion("");
+    setFlower("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+    
+    // Call the parent reset function
+    onReset();
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       if (selectedIndex >= 0 && suggestions[selectedIndex]) {
@@ -229,7 +241,7 @@ const SearchBar = ({ onSearch, onReset, initialRegion, initialFlower }: SearchBa
           </div>
           
           <Button
-            onClick={onReset}
+            onClick={handleReset}
             className="bg-gradient-reset hover:opacity-90 transition-opacity"
             variant="outline"
           >

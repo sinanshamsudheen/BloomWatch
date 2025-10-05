@@ -46,6 +46,27 @@ const MapView = ({ region, flower, coordinates, topRegions, abundanceData, onLoc
     return 4;
   }, []);
 
+  // Effect for handling map reset event
+  useEffect(() => {
+    const handleResetMap = () => {
+      if (map.current) {
+        map.current.flyTo({
+          center: [0, 20],
+          zoom: 2.5,
+          pitch: 0,
+          bearing: 0,
+          essential: true
+        });
+      }
+    };
+
+    window.addEventListener('resetMap', handleResetMap);
+    
+    return () => {
+      window.removeEventListener('resetMap', handleResetMap);
+    };
+  }, []);
+
   useEffect(() => {
     if (mapContainer.current && !map.current) {
       // Initialize MapLibre GL JS with custom globe style
