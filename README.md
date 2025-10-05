@@ -1,4 +1,5 @@
 # BloomWatch - Global Flower Bloom Exploration Platform
+<img width="1873" height="997" alt="image" src="https://github.com/user-attachments/assets/9f5be4ed-9341-4a97-8a0c-bf6410649a7a" />
 
 ## Overview
 BloomWatch is an open-source, rapid-deployment Earth observation platform that leverages NASA satellite data and AI agents to monitor, visualize, and explain global plant blooming events. The platform features an interactive 3D globe interface with real-time bloom data, AI-generated ecological explanations, and flower identification from images.
